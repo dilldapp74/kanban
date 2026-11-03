@@ -138,9 +138,11 @@ header h1 { font-size: 19px; font-weight: 800; letter-spacing: -.02em; margin: 0
   border-radius: 18px;
   padding: 12px;
 }
-.spalte[data-spalte="offen"] { --farbe: #6366f1; }
-.spalte[data-spalte="arbeit"] { --farbe: #f59e0b; }
-.spalte[data-spalte="erledigt"] { --farbe: #10b981; }
+/* Farbe je Spalte – gilt für Spalten, Leiste und Dialog-Knöpfe */
+[data-spalte="backlog"] { --farbe: #0ea5e9; }
+[data-spalte="offen"] { --farbe: #6366f1; }
+[data-spalte="arbeit"] { --farbe: #f59e0b; }
+[data-spalte="erledigt"] { --farbe: #10b981; }
 
 .spalte-kopf {
   display: flex; align-items: center; gap: 8px;
@@ -201,7 +203,11 @@ header h1 { font-size: 19px; font-weight: 800; letter-spacing: -.02em; margin: 0
   position: fixed; z-index: 100; pointer-events: none;
   box-shadow: inset 3px 0 0 var(--prio), var(--schatten-hoch);
   transform: rotate(2.5deg) scale(1.03);
+  transform-origin: 0 0;
+  transition: transform .12s ease, opacity .12s ease;
 }
+/* Über der Spaltenleiste klein und durchsichtig, damit das Ziel sichtbar bleibt */
+.karte.geist.ueber-leiste { transform: translate(8px, 22px) scale(.45); opacity: .6; }
 .spalte[data-spalte="erledigt"] .karte { opacity: .72; }
 .spalte[data-spalte="erledigt"] .karte .titel { text-decoration: line-through; color: var(--leise); }
 
@@ -282,12 +288,55 @@ dialog textarea { min-height: 90px; resize: vertical; }
 .knopf.gefahr { color: var(--rot); background: transparent; border-color: transparent; }
 .knopf.gefahr:hover { background: color-mix(in srgb, var(--rot) 10%, transparent); }
 
+/* Spaltenwahl im Dialog */
+.segmente { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.segment {
+  padding: 8px 4px; border-radius: 10px; cursor: pointer;
+  border: 1px solid var(--rand); background: var(--feld);
+  font-size: 13px; font-weight: 600; color: var(--leise);
+}
+.segment.aktiv {
+  color: var(--farbe); border-color: var(--farbe);
+  background: color-mix(in srgb, var(--farbe) 14%, transparent);
+}
+
+/* Spaltenleiste – nur auf dem Handy */
+.spaltenleiste { display: none; }
+.tab {
+  flex: 1 1 0; min-width: 0;
+  display: flex; align-items: center; justify-content: center; gap: 5px;
+  padding: 7px 4px; border-radius: 999px; cursor: pointer;
+  border: 1px solid var(--rand); background: var(--karte);
+  font-size: 12.5px; font-weight: 600; color: var(--leise);
+  transition: transform .12s ease, background .12s ease;
+}
+.tab > span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tab-anzahl { font-size: 11px; opacity: .8; }
+.tab.aktiv { color: var(--farbe); border-color: color-mix(in srgb, var(--farbe) 50%, transparent); }
+/* Beim Ziehen: Leiste als Ablageziel hervorheben */
+body.zieht .tab { border-style: dashed; border-color: var(--farbe); color: var(--farbe); }
+.tab.ziel {
+  transform: scale(1.08);
+  background: var(--farbe) !important; color: #fff !important; border-style: solid !important;
+}
+
+/* Kurzer Hinweis unten */
+.toast {
+  position: fixed; left: 50%; bottom: max(20px, env(safe-area-inset-bottom));
+  transform: translateX(-50%); z-index: 50;
+  padding: 10px 16px; border-radius: 999px;
+  background: var(--text); color: var(--karte);
+  font-size: 14px; font-weight: 600; box-shadow: var(--schatten-hoch);
+  animation: aufklappen .15s ease-out;
+}
+
 /* ---------- Handy ---------- */
 @media (max-width: 700px) {
   /* Zeile 1: Logo + Zahnrad, Zeile 2: Suche + Status */
   .menue-bereich { margin-left: auto; }
   #suche { order: 5; flex: 1 1 50%; max-width: none; min-width: 0; }
   .status { order: 6; margin-right: 0; }
+  .spaltenleiste { display: flex; order: 7; flex-basis: 100%; gap: 6px; }
   .spalte { flex-basis: calc(100vw - 44px); }
   #board { gap: 12px; }
 }

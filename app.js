@@ -3,6 +3,7 @@
 const SPEICHER_SCHLUESSEL = 'kanban-daten-v1';
 
 const SPALTEN = [
+  { id: 'backlog', name: 'Backlog' },
   { id: 'offen', name: 'Offen' },
   { id: 'arbeit', name: 'In Arbeit' },
   { id: 'erledigt', name: 'Erledigt' }
@@ -129,6 +130,8 @@ function zeichnen() {
   if (ziehen) return;
 
   const suche = suchfeld.value.trim().toLowerCase();
+  // Scrollposition merken, sonst springt das Handy nach jeder Änderung zur ersten Spalte
+  const scrollX = board.scrollLeft, scrollY = window.scrollY;
   board.innerHTML = '';
 
   for (const sp of SPALTEN) {
@@ -164,6 +167,58 @@ function zeichnen() {
     spalte.append(kopf, liste, neu);
     board.append(spalte);
   }
+
+  board.scrollLeft = scrollX;
+  window.scrollTo(0, scrollY);
+  leisteZeichnen();
+}
+
+// ---------- Spaltenleiste (Handy): springen und Karten ablegen ----------
+
+const leiste = document.getElementById('spaltenleiste');
+
+function leisteZeichnen() {
+  leiste.innerHTML = '';
+  for (const sp of SPALTEN) {
+    const tab = el('button', 'tab');
+    tab.type = 'button';
+    tab.dataset.spalte = sp.id;
+    tab.append(el('span', '', sp.name), el('span', 'tab-anzahl', kartenDerSpalte(sp.id).length));
+    tab.onclick = () => {
+      const spalte = board.querySelector('.spalte[data-spalte="' + sp.id + '"]');
+      if (spalte) spalte.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+    };
+    leiste.append(tab);
+  }
+  aktiveSpalteMarkieren();
+}
+
+// Die Spalte hervorheben, die gerade in der Bildschirmmitte steht
+function aktiveSpalteMarkieren() {
+  const mitte = window.innerWidth / 2;
+  let beste = null, abstand = Infinity;
+  for (const s of board.querySelectorAll('.spalte')) {
+    const r = s.getBoundingClientRect();
+    const a = Math.abs(r.left + r.width / 2 - mitte);
+    if (a < abstand) {
+      abstand = a;
+      beste = s.dataset.spalte;
+    }
+  }
+  for (const t of leiste.children) t.classList.toggle('aktiv', t.dataset.spalte === beste);
+}
+
+board.addEventListener('scroll', aktiveSpalteMarkieren, { passive: true });
+
+// Kurzer Hinweis am unteren Bildschirmrand
+const toast = document.getElementById('toast');
+let toastTimer = null;
+
+function hinweisZeigen(text) {
+  toast.textContent = text;
+  toast.hidden = false;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { toast.hidden = true; }, 2200);
 }
 
 function karteElement(k) {
@@ -210,10 +265,20 @@ const fFaellig = document.getElementById('fFaellig');
 const fSpalte = document.getElementById('fSpalte');
 const loeschenKnopf = document.getElementById('loeschenKnopf');
 
+// Spaltenwahl als Knöpfe – ein Tipp genügt zum Verschieben
+let gewaehlteSpalte = null;
+
 for (const sp of SPALTEN) {
-  const opt = el('option', '', sp.name);
-  opt.value = sp.id;
-  fSpalte.append(opt);
+  const knopf = el('button', 'segment', sp.name);
+  knopf.type = 'button';
+  knopf.dataset.spalte = sp.id;
+  knopf.onclick = () => spalteWaehlen(sp.id);
+  fSpalte.append(knopf);
+}
+
+function spalteWaehlen(id) {
+  gewaehlteSpalte = id;
+  for (const knopf of fSpalte.children) knopf.classList.toggle('aktiv', knopf.dataset.spalte === id);
 }
 
 let bearbeiteId = null; // null bedeutet: neue Karte
@@ -226,7 +291,7 @@ function dialogOeffnen(id, spalte) {
   fNotiz.value = k.notiz;
   fPrio.value = k.prio;
   fFaellig.value = k.faellig;
-  fSpalte.value = k.spalte;
+  spalteWaehlen(k.spalte);
   loeschenKnopf.style.display = id ? '' : 'none';
   dialog.showModal();
   if (!id) fTitel.focus();
@@ -239,7 +304,7 @@ formular.addEventListener('submit', e => {
     notiz: fNotiz.value.trim(),
     prio: fPrio.value,
     faellig: fFaellig.value,
-    spalte: fSpalte.value
+    spalte: gewaehlteSpalte
   };
   if (!werte.titel) return;
 
@@ -296,6 +361,7 @@ board.addEventListener('pointerdown', e => {
   document.body.append(geist);
 
   karte.classList.add('gezogen');
+  document.body.classList.add('zieht');
   ziehen = { id: karte.dataset.id, karte, geist, dx: e.clientX - r.left, dy: e.clientY - r.top, start: lageVon(karte) };
   geistBewegen(e.clientX, e.clientY);
 });
@@ -304,9 +370,18 @@ window.addEventListener('pointermove', e => {
   if (!ziehen) return;
   geistBewegen(e.clientX, e.clientY);
 
-  // Unter dem Zeiger liegende Spalte suchen und Karte dort einsortieren
   const unter = document.elementFromPoint(e.clientX, e.clientY);
-  const spalte = unter && unter.closest('.spalte');
+
+  // Über der Spaltenleiste? Dann landet die Karte beim Loslassen oben in dieser Spalte
+  const tab = unter && unter.closest('.tab');
+  ziehen.zielSpalte = tab ? tab.dataset.spalte : null;
+  for (const t of leiste.children) t.classList.toggle('ziel', t === tab);
+  ziehen.geist.classList.toggle('ueber-leiste', !!tab);
+  if (tab) return;
+
+  // Sonst die Spalte unter dem Zeiger suchen – notfalls nur nach der waagerechten Position,
+  // damit es auch klappt, wenn die Nachbarspalte kürzer ist
+  const spalte = (unter && unter.closest('.spalte')) || spalteBeiX(e.clientX);
   if (spalte) {
     const liste = spalte.querySelector('.karten');
     const andere = [...liste.querySelectorAll('.karte:not(.gezogen)')];
@@ -332,6 +407,13 @@ window.addEventListener('pointermove', e => {
 window.addEventListener('pointerup', ziehenBeenden);
 window.addEventListener('pointercancel', ziehenBeenden);
 
+function spalteBeiX(x) {
+  return [...board.querySelectorAll('.spalte')].find(s => {
+    const r = s.getBoundingClientRect();
+    return x >= r.left && x <= r.right;
+  });
+}
+
 function geistBewegen(x, y) {
   ziehen.geist.style.left = (x - ziehen.dx) + 'px';
   ziehen.geist.style.top = (y - ziehen.dy) + 'px';
@@ -339,11 +421,24 @@ function geistBewegen(x, y) {
 
 function ziehenBeenden() {
   if (!ziehen) return;
-  const { karte, geist, id, start } = ziehen;
+  const { karte, geist, id, start, zielSpalte } = ziehen;
   ziehen = null;
   geist.remove();
+  document.body.classList.remove('zieht');
+  for (const t of leiste.children) t.classList.remove('ziel');
 
   const k = daten.karten.find(x => x.id === id);
+
+  // Auf der Spaltenleiste abgelegt: ganz oben in die gewählte Spalte
+  if (k && zielSpalte) {
+    const andere = kartenDerSpalte(zielSpalte).filter(x => x !== k);
+    k.position = andere.length ? andere[0].position - 1000 : 0;
+    k.spalte = zielSpalte;
+    markieren(k);
+    uebernehmen();
+    hinweisZeigen('Verschoben nach „' + SPALTEN.find(s => s.id === zielSpalte).name + '“');
+    return;
+  }
   if (!k || lageVon(karte) === start) {
     zeichnen();
     return;

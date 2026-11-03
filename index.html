@@ -10,7 +10,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
-<link rel="stylesheet" href="style.css?v=4">
+<link rel="stylesheet" href="style.css?v=5">
 </head>
 <body>
 
@@ -43,9 +43,13 @@
     </div>
   </div>
   <input type="file" id="importDatei" accept=".json,application/json" hidden>
+  <!-- Nur auf dem Handy sichtbar: zu einer Spalte springen oder Karte hierher ziehen -->
+  <nav id="spaltenleiste" class="spaltenleiste" aria-label="Spalten"></nav>
 </header>
 
 <main id="board"></main>
+
+<div id="toast" class="toast" role="status" hidden></div>
 
 <!-- Aufgabe bearbeiten -->
 <dialog id="dialog">
@@ -70,8 +74,8 @@
         <input id="fFaellig" type="date">
       </div>
     </div>
-    <label for="fSpalte">Spalte</label>
-    <select id="fSpalte"></select>
+    <label>Spalte</label>
+    <div id="fSpalte" class="segmente"></div>
     <div class="aktionen">
       <button type="button" class="knopf gefahr" id="loeschenKnopf">Löschen</button>
       <div class="rechts">
@@ -103,9 +107,9 @@
 </dialog>
 
 <!-- Reihenfolge wichtig: erst Einstellungen, dann Bibliothek, dann eigener Code -->
-<script src="config.js?v=4"></script>
+<script src="config.js?v=5"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.110.0/dist/umd/supabase.js"></script>
-<script src="sync.js?v=4"></script>
-<script src="app.js?v=4"></script>
+<script src="sync.js?v=5"></script>
+<script src="app.js?v=5"></script>
 </body>
 </html>
