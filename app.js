@@ -71,6 +71,19 @@ function heute() {
   return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
 }
 
+const PRIO_NAMEN = { niedrig: 'Niedrig', mittel: 'Mittel', hoch: 'Hoch' };
+
+// Datum lesbar machen: "Heute", "Morgen", "Gestern" oder z. B. "14.11."
+function datumText(datum) {
+  const tag = 24 * 60 * 60 * 1000;
+  const abstand = Math.round((new Date(datum + 'T00:00') - new Date(heute() + 'T00:00')) / tag);
+  if (abstand === 0) return 'Heute';
+  if (abstand === 1) return 'Morgen';
+  if (abstand === -1) return 'Gestern';
+  const [j, m, t] = datum.split('-');
+  return t + '.' + m + '.' + (j === heute().slice(0, 4) ? '' : j);
+}
+
 // Sichtbare Karten einer Spalte, in der richtigen Reihenfolge
 function kartenDerSpalte(spalte) {
   return daten.karten
@@ -128,7 +141,7 @@ function zeichnen() {
     const kopf = el('div', 'spalte-kopf');
     kopf.append(el('h2', '', sp.name), el('span', 'anzahl', karten.length));
     if (sp.id === 'erledigt' && karten.length > 0) {
-      const leeren = el('button', 'knopf', 'Leeren');
+      const leeren = el('button', 'klein', 'Leeren');
       leeren.onclick = () => {
         if (confirm('Alle erledigten Aufgaben löschen?')) {
           for (const k of karten) {
@@ -163,11 +176,19 @@ function karteElement(k) {
   const inhalt = el('div', 'inhalt');
   inhalt.append(el('div', 'titel', k.titel));
   if (k.notiz) inhalt.append(el('div', 'notiz', k.notiz));
+
+  // Etiketten für Priorität und Fälligkeit
+  const etiketten = el('div', 'etiketten');
+  if (k.prio) etiketten.append(el('span', 'etikett prio-' + k.prio, PRIO_NAMEN[k.prio]));
   if (k.faellig) {
-    const ueberfaellig = k.faellig < heute() && k.spalte !== 'erledigt';
-    const [j, m, t] = k.faellig.split('-');
-    inhalt.append(el('div', 'meta' + (ueberfaellig ? ' ueberfaellig' : ''), '📅 ' + t + '.' + m + '.' + j));
+    let art = '';
+    if (k.spalte !== 'erledigt') {
+      if (k.faellig < heute()) art = ' ueberfaellig';
+      else if (k.faellig === heute()) art = ' heute';
+    }
+    etiketten.append(el('span', 'etikett datum' + art, '📅 ' + datumText(k.faellig)));
   }
+  if (etiketten.children.length) inhalt.append(etiketten);
 
   karte.append(griff, inhalt);
   karte.addEventListener('click', e => {
@@ -340,6 +361,29 @@ function ziehenBeenden() {
   markieren(k);
   uebernehmen();
 }
+
+// ---------- Einstellungsmenü ----------
+
+const menueKnopf = document.getElementById('menueKnopf');
+const menue = document.getElementById('menue');
+
+function menueUmschalten(offen) {
+  menue.hidden = !offen;
+  menueKnopf.setAttribute('aria-expanded', offen);
+}
+
+menueKnopf.onclick = () => menueUmschalten(menue.hidden);
+
+// Schließen bei Klick daneben, nach Auswahl eines Eintrags oder mit Escape
+document.addEventListener('click', e => {
+  if (!menue.hidden && !e.target.closest('.menue-bereich')) menueUmschalten(false);
+});
+menue.addEventListener('click', e => {
+  if (e.target.closest('.menue-eintrag')) menueUmschalten(false);
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') menueUmschalten(false);
+});
 
 // ---------- Sichern & Laden (Backup als Datei) ----------
 

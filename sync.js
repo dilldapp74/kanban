@@ -11,6 +11,7 @@ let kanal = null;   // Echtzeit-Verbindung für Änderungen anderer Geräte
 
 const statusAnzeige = document.getElementById('status');
 const kontoKnopf = document.getElementById('kontoKnopf');
+const kontoInfo = document.getElementById('kontoInfo');
 
 function syncStarten() {
   if (!SUPABASE_URL || !SUPABASE_KEY) {
@@ -43,15 +44,18 @@ function syncStarten() {
 
 function statusSetzen(zustand) {
   const texte = {
-    lokal: 'Nur auf diesem Gerät',
-    abgemeldet: 'Nicht angemeldet',
+    lokal: 'Nur lokal',
+    abgemeldet: 'Abgemeldet',
     laeuft: 'Gleiche ab…',
     ok: 'Abgeglichen',
-    fehler: 'Offline – wird nachgeholt'
+    fehler: 'Offline'
   };
   statusAnzeige.textContent = texte[zustand];
   statusAnzeige.className = 'status ' + zustand;
-  statusAnzeige.title = nutzer ? 'Angemeldet als ' + nutzer.email : '';
+  statusAnzeige.title = zustand === 'fehler'
+    ? 'Keine Verbindung – Änderungen werden nachgeholt'
+    : (nutzer ? 'Angemeldet als ' + nutzer.email : '');
+  kontoInfo.textContent = nutzer ? 'Angemeldet als ' + nutzer.email : (sb ? 'Nicht angemeldet' : 'Nur auf diesem Gerät');
 }
 
 async function angemeldet() {

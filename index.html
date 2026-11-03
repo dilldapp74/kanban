@@ -3,24 +3,45 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#2563eb">
+<meta name="theme-color" content="#6366f1">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <title>Mein Kanban</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css?v=4">
 </head>
 <body>
 
 <header>
-  <h1>Mein Kanban</h1>
+  <div class="marke">
+    <svg class="logo" viewBox="0 0 32 32" aria-hidden="true">
+      <rect x="7" y="8" width="5" height="16" rx="1.5" fill="#fff"/>
+      <rect x="13.5" y="8" width="5" height="11" rx="1.5" fill="#fff"/>
+      <rect x="20" y="8" width="5" height="7" rx="1.5" fill="#fff" opacity=".6"/>
+    </svg>
+    <h1>Mein Kanban</h1>
+  </div>
   <span id="status" class="status"></span>
   <input id="suche" type="search" placeholder="Suchen…">
-  <button class="knopf" id="exportKnopf" title="Alle Aufgaben als Datei sichern">Sichern</button>
-  <button class="knopf" id="importKnopf" title="Aufgaben aus Datei laden">Laden</button>
-  <button class="knopf" id="kontoKnopf" hidden>Anmelden</button>
+
+  <!-- Einstellungen: selten gebrauchte Funktionen -->
+  <div class="menue-bereich">
+    <button class="icon-knopf" id="menueKnopf" aria-label="Einstellungen" aria-haspopup="true" aria-expanded="false">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="12" cy="12" r="3"/>
+        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+      </svg>
+    </button>
+    <div class="menue" id="menue" hidden>
+      <div class="menue-kopf" id="kontoInfo">Nur auf diesem Gerät</div>
+      <button class="menue-eintrag" id="kontoKnopf" hidden>Anmelden</button>
+      <div class="menue-trenner"></div>
+      <button class="menue-eintrag" id="exportKnopf">Backup herunterladen</button>
+      <button class="menue-eintrag" id="importKnopf">Backup einspielen</button>
+    </div>
+  </div>
   <input type="file" id="importDatei" accept=".json,application/json" hidden>
 </header>
 
@@ -82,9 +103,9 @@
 </dialog>
 
 <!-- Reihenfolge wichtig: erst Einstellungen, dann Bibliothek, dann eigener Code -->
-<script src="config.js"></script>
+<script src="config.js?v=4"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.110.0/dist/umd/supabase.js"></script>
-<script src="sync.js"></script>
-<script src="app.js"></script>
+<script src="sync.js?v=4"></script>
+<script src="app.js?v=4"></script>
 </body>
 </html>
