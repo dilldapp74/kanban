@@ -407,3 +407,8 @@ function importieren(neue) {
 // Los geht's
 zeichnen();
 syncStarten();
+
+// Installierbar und offline startbar machen (nur über http/https möglich)
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  navigator.serviceWorker.register('sw.js').catch(e => console.warn('Service Worker:', e));
+}
