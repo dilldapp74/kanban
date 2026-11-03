@@ -41,7 +41,8 @@ In Supabase unter **Authentication**:
 
 ## 5. Auf dem Handy
 1. Adresse in Chrome öffnen und anmelden.
-2. Menü ⋮ → **Zum Startbildschirm hinzufügen** – das Board startet dann wie eine App.
+2. Menü ⋮ → **Zum Startbildschirm hinzufügen** → **Installieren** – das Board startet dann wie eine App
+   (eigenes Symbol, ohne Adressleiste, startet auch offline).
 
 ## Gut zu wissen
 - **Offline:** Änderungen werden lokal gespeichert und automatisch hochgeladen, sobald wieder Internet da ist
