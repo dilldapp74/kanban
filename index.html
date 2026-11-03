@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#2563eb">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Mein Kanban</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header>
+  <h1>Mein Kanban</h1>
+  <span id="status" class="status"></span>
+  <input id="suche" type="search" placeholder="Suchen…">
+  <button class="knopf" id="exportKnopf" title="Alle Aufgaben als Datei sichern">Sichern</button>
+  <button class="knopf" id="importKnopf" title="Aufgaben aus Datei laden">Laden</button>
+  <button class="knopf" id="kontoKnopf" hidden>Anmelden</button>
+  <input type="file" id="importDatei" accept=".json,application/json" hidden>
+</header>
+
+<main id="board"></main>
+
+<!-- Aufgabe bearbeiten -->
+<dialog id="dialog">
+  <form id="formular">
+    <h3 id="dialogTitel">Aufgabe</h3>
+    <label for="fTitel">Titel</label>
+    <input id="fTitel" required maxlength="200" autocomplete="off">
+    <label for="fNotiz">Notiz</label>
+    <textarea id="fNotiz"></textarea>
+    <div class="zeile">
+      <div>
+        <label for="fPrio">Priorität</label>
+        <select id="fPrio">
+          <option value="">keine</option>
+          <option value="niedrig">niedrig</option>
+          <option value="mittel">mittel</option>
+          <option value="hoch">hoch</option>
+        </select>
+      </div>
+      <div>
+        <label for="fFaellig">Fällig am</label>
+        <input id="fFaellig" type="date">
+      </div>
+    </div>
+    <label for="fSpalte">Spalte</label>
+    <select id="fSpalte"></select>
+    <div class="aktionen">
+      <button type="button" class="knopf gefahr" id="loeschenKnopf">Löschen</button>
+      <div class="rechts">
+        <button type="button" class="knopf" id="abbrechenKnopf">Abbrechen</button>
+        <button type="submit" class="knopf primaer">Speichern</button>
+      </div>
+    </div>
+  </form>
+</dialog>
+
+<!-- Anmelden / Konto -->
+<dialog id="kontoDialog">
+  <form id="kontoFormular">
+    <h3>Anmelden</h3>
+    <p class="hinweis">Mit einem Konto werden deine Aufgaben zwischen all deinen Geräten abgeglichen.</p>
+    <label for="kEmail">E-Mail</label>
+    <input id="kEmail" type="email" required autocomplete="email">
+    <label for="kPasswort">Passwort</label>
+    <input id="kPasswort" type="password" required minlength="6" autocomplete="current-password">
+    <p id="kMeldung" class="meldung"></p>
+    <div class="aktionen">
+      <button type="button" class="knopf" id="registrierenKnopf">Neu registrieren</button>
+      <div class="rechts">
+        <button type="button" class="knopf" id="kAbbrechenKnopf">Abbrechen</button>
+        <button type="submit" class="knopf primaer">Anmelden</button>
+      </div>
+    </div>
+  </form>
+</dialog>
+
+<!-- Reihenfolge wichtig: erst Einstellungen, dann Bibliothek, dann eigener Code -->
+<script src="config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.110.0/dist/umd/supabase.js"></script>
+<script src="sync.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
