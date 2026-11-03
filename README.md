@@ -68,6 +68,19 @@ Eine Tabelle `karten` (siehe `supabase.sql`):
 ### Sicherheit
 
 - Row Level Security: Jedes Konto liest und ändert nur seine eigenen Karten.
+- Minimale Tabellenrechte: `anon` hat keine, `authenticated` nur `SELECT`, `INSERT`, `UPDATE`
+  (kein `DELETE`/`TRUNCATE`).
+- Prüfregeln (`CHECK`) in der Tabelle: Längen von ID/Titel/Notiz, erlaubte Werte für Priorität,
+  Spalte und Datumsformat. Neue Spalten oder Prioritäten müssen dort mit ergänzt werden.
+- Content-Security-Policy (Meta-Tag in `index.html`): Skripte nur von der eigenen Seite und
+  `cdn.jsdelivr.net`, Verbindungen nur zu `*.supabase.co`.
+- Subresource Integrity: Die Supabase-Bibliothek wird nur ausgeführt, wenn ihre Prüfsumme stimmt.
+  Bei einem Versionswechsel die Prüfsumme neu berechnen:
+  ```bash
+  curl -s https://cdn.jsdelivr.net/npm/@supabase/supabase-js@VERSION/dist/umd/supabase.js \
+    | openssl dgst -sha384 -binary | openssl base64 -A
+  ```
+  und in `index.html` (`integrity="sha384-…"`) sowie die URL in `sw.js` anpassen.
 - In `config.js` steht nur der öffentliche Schlüssel (`publishable`/`anon`) – er ist für den Browser
   gedacht. Der geheime `service_role`-Schlüssel gehört **nie** in dieses Repo.
 - Neue Registrierungen sind im Supabase-Projekt abgeschaltet.

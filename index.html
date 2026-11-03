@@ -2,6 +2,8 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
+<!-- Sicherheit: Nur eigene Dateien, die Supabase-Bibliothek und Verbindungen zu Supabase sind erlaubt -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self'; img-src 'self' data: blob:; connect-src 'self' https://cdn.jsdelivr.net https://*.supabase.co wss://*.supabase.co; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#09090b">
 <meta name="mobile-web-app-capable" content="yes">
@@ -10,7 +12,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
-<link rel="stylesheet" href="style.css?v=7">
+<link rel="stylesheet" href="style.css?v=8">
 </head>
 <body>
 
@@ -56,7 +58,7 @@
     <label for="fTitel">Titel</label>
     <input id="fTitel" required maxlength="200" autocomplete="off">
     <label for="fNotiz">Notiz</label>
-    <textarea id="fNotiz"></textarea>
+    <textarea id="fNotiz" maxlength="5000"></textarea>
     <div class="zeile">
       <div>
         <label for="fPrio">Priorität</label>
@@ -105,9 +107,13 @@
 </dialog>
 
 <!-- Reihenfolge wichtig: erst Einstellungen, dann Bibliothek, dann eigener Code -->
-<script src="config.js?v=7"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.110.0/dist/umd/supabase.js"></script>
-<script src="sync.js?v=7"></script>
-<script src="app.js?v=7"></script>
+<script src="config.js?v=8"></script>
+<!-- integrity: Der Browser führt die Bibliothek nur aus, wenn sie Byte für Byte unverändert ist.
+     Bei einem Versionswechsel neu berechnen (siehe README). -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.110.0/dist/umd/supabase.js"
+        integrity="sha384-3wY11tldQ5+yWqAvmTN4XtQvnjoTva0cV15O/O/O5NTtp0ivVopSzLOzsVXWZse9"
+        crossorigin="anonymous"></script>
+<script src="sync.js?v=8"></script>
+<script src="app.js?v=8"></script>
 </body>
 </html>
