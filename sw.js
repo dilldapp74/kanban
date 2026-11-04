@@ -2,7 +2,7 @@
 // Strategie: immer zuerst aus dem Netz laden (damit Updates sofort ankommen),
 // bei fehlender Verbindung die zuletzt gespeicherte Fassung verwenden.
 
-const CACHE = 'kanban-v6';
+const CACHE = 'kanban-v7';
 
 const DATEIEN = [
   './',
@@ -10,6 +10,7 @@ const DATEIEN = [
   './style.css',
   './config.js',
   './sync.js',
+  './familie.js',
   './app.js',
   './manifest.webmanifest',
   './icons/icon-192.png',
@@ -47,5 +48,31 @@ self.addEventListener('fetch', ereignis => {
         return antwort;
       })
       .catch(() => caches.match(anfrage, { ignoreSearch: true }))
+  );
+});
+
+// ---------- Push-Benachrichtigungen (kommen von der Edge Function "benachrichtigen") ----------
+
+self.addEventListener('push', ereignis => {
+  let nachricht = {};
+  try {
+    nachricht = ereignis.data ? ereignis.data.json() : {};
+  } catch (e) { /* kein gültiges JSON – Standardtext zeigen */ }
+  ereignis.waitUntil(self.registration.showNotification(nachricht.titel || 'Family Kanban', {
+    body: nachricht.text || '',
+    icon: 'icons/icon-192.png',
+    tag: nachricht.tag,           // gleiche Karte: alte Nachricht wird ersetzt statt gestapelt
+    data: { url: './' }
+  }));
+});
+
+// Antippen öffnet die App (oder holt das offene Fenster nach vorn)
+self.addEventListener('notificationclick', ereignis => {
+  ereignis.notification.close();
+  ereignis.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(fenster => {
+      for (const f of fenster) if ('focus' in f) return f.focus();
+      return self.clients.openWindow(ereignis.notification.data.url);
+    })
   );
 });

@@ -8,11 +8,12 @@
 <meta name="theme-color" content="#09090b">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<title>Mein Kanban</title>
+<meta name="apple-mobile-web-app-title" content="Family Kanban">
+<title>Family Kanban</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
-<link rel="stylesheet" href="style.css?v=8">
+<link rel="stylesheet" href="style.css?v=9">
 </head>
 <body>
 
@@ -21,10 +22,16 @@
     <svg class="logo" viewBox="0 0 32 32" aria-hidden="true">
       <path d="M9.5 16.5l4.5 4.5 8.5-9" fill="none" stroke="#fff" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/>
     </svg>
-    <h1>Mein Kanban</h1>
+    <h1>Family Kanban</h1>
   </div>
-  <span id="status" class="status"></span>
+  <button type="button" id="status" class="status"></button>
   <input id="suche" type="search" placeholder="Suchen…">
+
+  <!-- Nur mit Familie sichtbar: eigene oder alle Aufgaben zeigen -->
+  <div id="ansicht" class="ansicht" role="group" aria-label="Ansicht" hidden>
+    <button type="button" data-ansicht="meine">Meine</button>
+    <button type="button" data-ansicht="alle">Alle</button>
+  </div>
 
   <!-- Einstellungen: selten gebrauchte Funktionen -->
   <div class="menue-bereich">
@@ -37,6 +44,10 @@
     <div class="menue" id="menue" hidden>
       <div class="menue-kopf" id="kontoInfo">Nur auf diesem Gerät</div>
       <button class="menue-eintrag" id="kontoKnopf" hidden>Anmelden</button>
+      <button class="menue-eintrag" id="passwortKnopf" hidden>Passwort ändern</button>
+      <div class="menue-trenner"></div>
+      <button class="menue-eintrag" id="familieKnopf" hidden>Familie verwalten</button>
+      <button class="menue-eintrag" id="hinweiseKnopf" hidden>Benachrichtigungen</button>
       <div class="menue-trenner"></div>
       <button class="menue-eintrag" id="exportKnopf">Backup herunterladen</button>
       <button class="menue-eintrag" id="importKnopf">Backup einspielen</button>
@@ -51,14 +62,28 @@
 
 <div id="toast" class="toast" role="status" hidden></div>
 
-<!-- Aufgabe bearbeiten -->
+<!-- Aufgabe bearbeiten. Speichern/Abbrechen stehen oben, damit die Handy-Tastatur sie nicht verdeckt. -->
 <dialog id="dialog">
   <form id="formular">
-    <h3 id="dialogTitel">Aufgabe</h3>
-    <label for="fTitel">Titel</label>
+    <div class="dialog-kopf">
+      <h3 id="dialogTitel">Aufgabe</h3>
+      <button type="button" class="knopf" id="abbrechenKnopf">Abbrechen</button>
+      <button type="submit" class="knopf primaer">Speichern</button>
+    </div>
+    <div class="feld-kopf">
+      <label for="fTitel">Titel</label>
+      <button type="button" class="mikro" data-feld="fTitel" aria-label="Titel diktieren" title="Diktieren" hidden></button>
+    </div>
     <input id="fTitel" required maxlength="200" autocomplete="off">
-    <label for="fNotiz">Notiz</label>
+    <div class="feld-kopf">
+      <label for="fNotiz">Notiz</label>
+      <button type="button" class="mikro" data-feld="fNotiz" aria-label="Notiz diktieren" title="Diktieren" hidden></button>
+    </div>
     <textarea id="fNotiz" maxlength="5000"></textarea>
+    <div id="zuweisungBereich" hidden>
+      <label>Zugewiesen an <span id="fZuweisungName" class="leise"></span></label>
+      <div id="fZuweisung" class="personen"></div>
+    </div>
     <div class="zeile">
       <div>
         <label for="fPrio">Priorität</label>
@@ -78,42 +103,105 @@
     <div id="fSpalte" class="segmente"></div>
     <div class="aktionen">
       <button type="button" class="knopf gefahr" id="loeschenKnopf">Löschen</button>
-      <div class="rechts">
-        <button type="button" class="knopf" id="abbrechenKnopf">Abbrechen</button>
-        <button type="submit" class="knopf primaer">Speichern</button>
-      </div>
     </div>
   </form>
 </dialog>
 
-<!-- Anmelden / Konto -->
+<!-- Anmelden -->
 <dialog id="kontoDialog">
   <form id="kontoFormular">
-    <h3>Anmelden</h3>
-    <p class="hinweis">Mit einem Konto werden deine Aufgaben zwischen all deinen Geräten abgeglichen.</p>
+    <div class="dialog-kopf">
+      <h3>Anmelden</h3>
+      <button type="button" class="knopf" id="kAbbrechenKnopf">Abbrechen</button>
+      <button type="submit" class="knopf primaer">Anmelden</button>
+    </div>
+    <p class="hinweis">Mit einem Konto werden die Aufgaben der Familie zwischen allen Geräten abgeglichen.</p>
     <label for="kEmail">E-Mail</label>
     <input id="kEmail" type="email" required autocomplete="email">
     <label for="kPasswort">Passwort</label>
     <input id="kPasswort" type="password" required minlength="6" autocomplete="current-password">
     <p id="kMeldung" class="meldung"></p>
-    <div class="aktionen">
-      <button type="button" class="knopf" id="registrierenKnopf">Neu registrieren</button>
-      <div class="rechts">
-        <button type="button" class="knopf" id="kAbbrechenKnopf">Abbrechen</button>
-        <button type="submit" class="knopf primaer">Anmelden</button>
-      </div>
-    </div>
   </form>
 </dialog>
 
+<!-- Passwort ändern -->
+<dialog id="passwortDialog">
+  <form id="passwortFormular">
+    <div class="dialog-kopf">
+      <h3>Passwort ändern</h3>
+      <button type="button" class="knopf" id="pAbbrechenKnopf">Abbrechen</button>
+      <button type="submit" class="knopf primaer">Speichern</button>
+    </div>
+    <label for="pNeu">Neues Passwort (mindestens 8 Zeichen)</label>
+    <input id="pNeu" type="password" required minlength="8" autocomplete="new-password">
+    <label for="pWiederholung">Wiederholen</label>
+    <input id="pWiederholung" type="password" required minlength="8" autocomplete="new-password">
+    <p id="pMeldung" class="meldung"></p>
+  </form>
+</dialog>
+
+<!-- Familie verwalten -->
+<dialog id="familieDialog">
+  <div class="dialog-kopf">
+    <h3>Familie</h3>
+    <button type="button" class="knopf" id="familieSchliessenKnopf">Fertig</button>
+  </div>
+  <div id="familieListe" class="familie-liste"></div>
+  <form id="mitgliedFormular" class="mitglied-formular">
+    <h4 id="mitgliedTitel">Mitglied hinzufügen</h4>
+    <div class="zeile">
+      <div class="breit">
+        <label for="mName">Vorname</label>
+        <input id="mName" required maxlength="40" autocomplete="off">
+      </div>
+      <div class="schmal">
+        <label for="mKuerzel">Kürzel</label>
+        <input id="mKuerzel" required maxlength="3" autocomplete="off">
+      </div>
+    </div>
+    <label for="mEmail">E-Mail (nur wer die App selbst nutzt)</label>
+    <input id="mEmail" type="email" maxlength="200" autocomplete="off">
+    <label>Farbe</label>
+    <div id="mFarben" class="farben"></div>
+    <p id="mMeldung" class="meldung"></p>
+    <div class="aktionen">
+      <button type="button" class="knopf" id="mAbbrechenKnopf" hidden>Abbrechen</button>
+      <div class="rechts">
+        <button type="submit" class="knopf primaer" id="mSpeichernKnopf">Hinzufügen</button>
+      </div>
+    </div>
+    <p class="hinweis">Damit jemand die App selbst nutzen kann, im Supabase-Dashboard unter
+      Authentication → Users ein Konto mit derselben E-Mail anlegen. Beim ersten Anmelden
+      wird es automatisch zugeordnet.</p>
+  </form>
+</dialog>
+
+<!-- Benachrichtigungen -->
+<dialog id="hinweiseDialog">
+  <div class="dialog-kopf">
+    <h3>Benachrichtigungen</h3>
+    <button type="button" class="knopf" id="hinweiseSchliessenKnopf">Fertig</button>
+  </div>
+  <p id="hStatus" class="hinweis"></p>
+  <div class="aktionen">
+    <button type="button" class="knopf primaer" id="hAktivieren" hidden>Auf diesem Gerät aktivieren</button>
+    <button type="button" class="knopf" id="hAbschalten" hidden>Auf diesem Gerät abschalten</button>
+  </div>
+  <h4>Benachrichtige mich bei …</h4>
+  <label class="schalter"><input type="checkbox" id="hZuweisung"> einer neuen Aufgabe für mich</label>
+  <label class="schalter"><input type="checkbox" id="hAenderung"> Änderungen an meinen Aufgaben durch andere</label>
+  <label class="schalter"><input type="checkbox" id="hMorgens"> morgens: was heute fällig ist</label>
+</dialog>
+
 <!-- Reihenfolge wichtig: erst Einstellungen, dann Bibliothek, dann eigener Code -->
-<script src="config.js?v=8"></script>
+<script src="config.js?v=9"></script>
 <!-- integrity: Der Browser führt die Bibliothek nur aus, wenn sie Byte für Byte unverändert ist.
      Bei einem Versionswechsel neu berechnen (siehe README). -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.110.0/dist/umd/supabase.js"
         integrity="sha384-3wY11tldQ5+yWqAvmTN4XtQvnjoTva0cV15O/O/O5NTtp0ivVopSzLOzsVXWZse9"
         crossorigin="anonymous"></script>
-<script src="sync.js?v=8"></script>
-<script src="app.js?v=8"></script>
+<script src="sync.js?v=9"></script>
+<script src="familie.js?v=9"></script>
+<script src="app.js?v=9"></script>
 </body>
 </html>

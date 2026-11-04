@@ -4,6 +4,7 @@
 // Jede Änderung wird hochgeladen; was nicht klappt, bleibt in "ausstehend"
 // und wird beim nächsten Abgleich nachgeholt. Haben zwei Geräte dieselbe Karte
 // geändert, gewinnt die Fassung mit dem neueren Zeitstempel.
+// Alle Familienmitglieder sehen dieselben Karten (siehe supabase.sql).
 
 let sb = null;      // Supabase-Client (null = nur lokal)
 let nutzer = null;  // angemeldeter Nutzer
@@ -12,6 +13,7 @@ let kanal = null;   // Echtzeit-Verbindung für Änderungen anderer Geräte
 const statusAnzeige = document.getElementById('status');
 const kontoKnopf = document.getElementById('kontoKnopf');
 const kontoInfo = document.getElementById('kontoInfo');
+const passwortKnopf = document.getElementById('passwortKnopf');
 
 function syncStarten() {
   if (!SUPABASE_URL || !SUPABASE_KEY) {
@@ -48,25 +50,37 @@ function statusSetzen(zustand) {
     abgemeldet: 'Abgemeldet',
     laeuft: 'Gleiche ab…',
     ok: 'Abgeglichen',
-    fehler: 'Offline'
+    fehler: 'Offline',
+    keineFamilie: 'Keine Familie'
+  };
+  const erklaerungen = {
+    fehler: 'Keine Verbindung – Änderungen werden nachgeholt',
+    keineFamilie: 'Dein Konto ist noch keinem Familienmitglied zugeordnet. Ein Mitglied mit deiner E-Mail muss unter „Familie verwalten“ angelegt werden.'
   };
   statusAnzeige.textContent = texte[zustand];
   statusAnzeige.className = 'status ' + zustand;
-  statusAnzeige.title = zustand === 'fehler'
-    ? 'Keine Verbindung – Änderungen werden nachgeholt'
-    : (nutzer ? 'Angemeldet als ' + nutzer.email : '');
+  statusAnzeige.title = erklaerungen[zustand] || (nutzer ? 'Angemeldet als ' + nutzer.email : texte[zustand]);
   kontoInfo.textContent = nutzer ? 'Angemeldet als ' + nutzer.email : (sb ? 'Nicht angemeldet' : 'Nur auf diesem Gerät');
+}
+
+// Auf dem Handy ist der Status nur ein Punkt – antippen zeigt die Erklärung
+statusAnzeige.addEventListener('click', () => hinweisZeigen(statusAnzeige.title));
+
+// Abgeglichen – oder angemeldet, aber (noch) nicht in der Familie
+function statusNachAbgleich() {
+  statusSetzen(meinMitglied ? 'ok' : 'keineFamilie');
 }
 
 async function angemeldet() {
   kontoKnopf.textContent = 'Abmelden';
+  passwortKnopf.hidden = false;
 
   // Erste Anmeldung auf diesem Gerät: Was passiert mit den lokalen Karten?
   if (daten.nutzerId !== nutzer.id) {
     const lokale = daten.karten.filter(k => !k.geloescht);
     if (daten.unberuehrt || !lokale.length) {
       daten = leereDaten();
-    } else if (confirm(lokale.length + ' Aufgaben von diesem Gerät in dein Konto übernehmen?\n\n„Abbrechen“ verwirft sie auf diesem Gerät.')) {
+    } else if (confirm(lokale.length + ' Aufgaben von diesem Gerät für die Familie übernehmen?\n\n„Abbrechen“ verwirft sie auf diesem Gerät.')) {
       daten.ausstehend = daten.karten.map(k => k.id);
     } else {
       daten = leereDaten();
@@ -77,11 +91,21 @@ async function angemeldet() {
     zeichnen();
   }
 
-  // Änderungen anderer Geräte live empfangen
-  kanal = sb.channel('karten-' + nutzer.id)
-    .on('postgres_changes',
-      { event: '*', schema: 'public', table: 'karten', filter: 'user_id=eq.' + nutzer.id },
+  // Konto über die E-Mail seinem Familienmitglied zuordnen, dann die Familie laden
+  try {
+    const { error } = await sb.rpc('mitglied_verknuepfen');
+    if (error) throw error;
+    await mitgliederLaden();
+  } catch (e) {
+    console.warn('Familie laden fehlgeschlagen:', e);
+  }
+
+  // Änderungen der anderen Familienmitglieder live empfangen
+  kanal = sb.channel('familie')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'karten' },
       nachricht => { if (nachricht.new && nachricht.new.id) zusammenfuehren([nachricht.new]); })
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'mitglieder' },
+      () => mitgliederLaden().catch(e => console.warn('Familie laden fehlgeschlagen:', e)))
     .subscribe();
 
   await abgleichen();
@@ -89,16 +113,18 @@ async function angemeldet() {
 
 function abgemeldet() {
   kontoKnopf.textContent = 'Anmelden';
+  passwortKnopf.hidden = true;
   if (kanal) {
     sb.removeChannel(kanal);
     kanal = null;
   }
+  familieZuruecksetzen();
   // Daten des Kontos nicht auf dem Gerät liegen lassen
   if (daten.nutzerId) {
     daten = leereDaten();
     speichern();
-    zeichnen();
   }
+  zeichnen();
   statusSetzen('abgemeldet');
 }
 
@@ -111,7 +137,7 @@ async function abgleichen() {
     const { data, error } = await sb.from('karten').select('*');
     if (error) throw error;
     zusammenfuehren(data);
-    statusSetzen('ok');
+    statusNachAbgleich();
   } catch (e) {
     console.warn('Abgleich fehlgeschlagen:', e);
     statusSetzen('fehler');
@@ -123,7 +149,7 @@ function syncNachAenderung() {
   if (!sb || !nutzer) return;
   statusSetzen('laeuft');
   hochladen()
-    .then(() => statusSetzen('ok'))
+    .then(statusNachAbgleich)
     .catch(e => {
       console.warn('Hochladen fehlgeschlagen:', e);
       statusSetzen('fehler');
@@ -135,7 +161,8 @@ let hochladenLaeuft = false;
 let nochmalHochladen = false;
 
 async function hochladen() {
-  if (!sb || !nutzer) return;
+  // Ohne Familienzugehörigkeit lässt die Datenbank nichts zu – Änderungen bleiben ausstehend
+  if (!sb || !nutzer || !meinMitglied) return;
   if (hochladenLaeuft) {
     nochmalHochladen = true;
     return;
@@ -151,10 +178,7 @@ async function hochladen() {
         if (k) stand.set(id, k.geaendert);
       }
       const zeilen = daten.karten.filter(k => stand.has(k.id)).map(zeileAus);
-      if (zeilen.length) {
-        const { error } = await sb.from('karten').upsert(zeilen);
-        if (error) throw error;
-      }
+      if (zeilen.length) await zeilenHochladen(zeilen);
       daten.ausstehend = daten.ausstehend.filter(id => {
         const k = daten.karten.find(x => x.id === id);
         return k && k.geaendert !== stand.get(id);
@@ -164,13 +188,34 @@ async function hochladen() {
   } finally {
     hochladenLaeuft = false;
   }
+  meldungenSenden();
 }
 
-// Karte in eine Datenbankzeile umwandeln (user_id setzt die Datenbank selbst)
+// Erst alle Karten auf einmal. Lehnt die Datenbank etwas ab (Prüfregel verletzt),
+// jede einzeln versuchen – so blockiert eine ungültige Karte nicht den ganzen Abgleich.
+async function zeilenHochladen(zeilen) {
+  const { error } = await sb.from('karten').upsert(zeilen);
+  if (!error) return;
+  if (!regelVerletzt(error)) throw error;
+  for (const zeile of zeilen) {
+    const { error: fehler } = await sb.from('karten').upsert(zeile);
+    if (fehler && !regelVerletzt(fehler)) throw fehler;
+    if (fehler) console.warn('Karte von der Datenbank abgelehnt und übersprungen:', zeile.id, fehler.message);
+  }
+}
+
+// Fehlercodes 23… = Prüfregel oder Verweis verletzt (z. B. unbekannte Spalte)
+function regelVerletzt(fehler) {
+  return /^23/.test(fehler.code || '');
+}
+
+// Karte in eine Datenbankzeile umwandeln (user_id = Ersteller, setzt die Datenbank selbst)
 function zeileAus(k) {
   return {
     id: k.id, titel: k.titel, notiz: k.notiz, prio: k.prio, faellig: k.faellig,
-    spalte: k.spalte, position: k.position, geaendert: k.geaendert, geloescht: k.geloescht
+    spalte: k.spalte, position: k.position, geaendert: k.geaendert, geloescht: k.geloescht,
+    // Zuweisung an ein inzwischen entferntes Mitglied nicht hochladen
+    zugewiesen: k.zugewiesen && mitgliedNach(k.zugewiesen) ? k.zugewiesen : null
   };
 }
 
@@ -180,7 +225,8 @@ function zusammenfuehren(zeilen) {
   for (const z of zeilen) {
     const fassung = {
       id: z.id, titel: z.titel, notiz: z.notiz, prio: z.prio, faellig: z.faellig,
-      spalte: z.spalte, position: z.position, geaendert: z.geaendert, geloescht: z.geloescht
+      spalte: z.spalte, position: z.position, geaendert: z.geaendert, geloescht: z.geloescht,
+      zugewiesen: z.zugewiesen || null
     };
     const lokal = daten.karten.find(k => k.id === z.id);
     if (!lokal) {
@@ -198,7 +244,12 @@ function zusammenfuehren(zeilen) {
   }
 }
 
-// ---------- Anmelden / Abmelden ----------
+// ---------- Anmelden / Abmelden / Passwort ----------
+
+function meldungSetzen(element, text, istFehler) {
+  element.textContent = text;
+  element.className = 'meldung' + (istFehler ? ' fehler' : '');
+}
 
 const kontoDialog = document.getElementById('kontoDialog');
 const kontoFormular = document.getElementById('kontoFormular');
@@ -206,19 +257,15 @@ const kEmail = document.getElementById('kEmail');
 const kPasswort = document.getElementById('kPasswort');
 const kMeldung = document.getElementById('kMeldung');
 
-function meldung(text, istFehler) {
-  kMeldung.textContent = text;
-  kMeldung.className = 'meldung' + (istFehler ? ' fehler' : '');
-}
-
 kontoKnopf.onclick = async () => {
   if (nutzer) {
     if (daten.ausstehend.length && !confirm('Einige Änderungen sind noch nicht hochgeladen und gehen beim Abmelden verloren. Trotzdem abmelden?')) return;
-    if (!confirm('Abmelden? Deine Aufgaben werden von diesem Gerät entfernt und bleiben in deinem Konto.')) return;
+    if (!confirm('Abmelden? Die Aufgaben werden von diesem Gerät entfernt und bleiben in der Familie gespeichert.')) return;
+    await pushAbmelden();
     await sb.auth.signOut();
     return;
   }
-  meldung('');
+  meldungSetzen(kMeldung, '');
   kPasswort.value = '';
   kontoDialog.showModal();
   kEmail.focus();
@@ -228,27 +275,42 @@ document.getElementById('kAbbrechenKnopf').onclick = () => kontoDialog.close();
 
 kontoFormular.addEventListener('submit', async e => {
   e.preventDefault();
-  meldung('Melde an…');
+  meldungSetzen(kMeldung, 'Melde an…');
   const { error } = await sb.auth.signInWithPassword({ email: kEmail.value.trim(), password: kPasswort.value });
   if (error) {
-    meldung(error.message === 'Invalid login credentials' ? 'E-Mail oder Passwort falsch.' : error.message, true);
+    meldungSetzen(kMeldung, error.message === 'Invalid login credentials' ? 'E-Mail oder Passwort falsch.' : error.message, true);
     return;
   }
   kontoDialog.close();
 });
 
-document.getElementById('registrierenKnopf').onclick = async () => {
-  if (!kontoFormular.reportValidity()) return;
-  meldung('Registriere…');
-  const optionen = location.protocol.startsWith('http') ? { emailRedirectTo: location.origin + location.pathname } : {};
-  const { data, error } = await sb.auth.signUp({ email: kEmail.value.trim(), password: kPasswort.value, options: optionen });
-  if (error) {
-    meldung(error.message, true);
+const passwortDialog = document.getElementById('passwortDialog');
+const pNeu = document.getElementById('pNeu');
+const pWiederholung = document.getElementById('pWiederholung');
+const pMeldung = document.getElementById('pMeldung');
+
+passwortKnopf.onclick = () => {
+  pNeu.value = '';
+  pWiederholung.value = '';
+  meldungSetzen(pMeldung, '');
+  passwortDialog.showModal();
+  pNeu.focus();
+};
+
+document.getElementById('pAbbrechenKnopf').onclick = () => passwortDialog.close();
+
+document.getElementById('passwortFormular').addEventListener('submit', async e => {
+  e.preventDefault();
+  if (pNeu.value !== pWiederholung.value) {
+    meldungSetzen(pMeldung, 'Die beiden Eingaben stimmen nicht überein.', true);
     return;
   }
-  if (data.session) {
-    kontoDialog.close();
-  } else {
-    meldung('Fast geschafft: Bitte bestätige den Link in der E-Mail, die du gerade bekommen hast, und melde dich dann an.');
+  meldungSetzen(pMeldung, 'Speichere…');
+  const { error } = await sb.auth.updateUser({ password: pNeu.value });
+  if (error) {
+    meldungSetzen(pMeldung, error.message, true);
+    return;
   }
-};
+  passwortDialog.close();
+  hinweisZeigen('Passwort geändert');
+});

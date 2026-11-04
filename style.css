@@ -84,7 +84,9 @@ header h1 { font-size: 19px; font-weight: 800; letter-spacing: -.02em; margin: 0
   padding: 3px 10px; border-radius: 999px;
   font-size: 12px; color: var(--kopf-leise);
   background: var(--kopf-feld); border: 1px solid var(--kopf-rand);
+  cursor: pointer;
 }
+.status.keineFamilie::before { background: var(--gelb); }
 .status::before {
   content: ""; width: 7px; height: 7px; border-radius: 50%;
   background: var(--kopf-leise);
@@ -232,6 +234,19 @@ header h1 { font-size: 19px; font-weight: 800; letter-spacing: -.02em; margin: 0
   touch-action: none; /* wichtig, damit Ziehen auf dem Handy nicht scrollt */
 }
 .karte:hover .griff { opacity: 1; }
+/* Zweiter Griff rechts nur auf dem Handy (Daumen) – auf dem Mac genügt einer */
+.griff.rechts { display: none; }
+.karte .avatar { align-self: flex-start; margin: 1px 6px 0 2px; }
+
+/* Kürzel-Kreis eines Familienmitglieds */
+.avatar {
+  --c: var(--leise);
+  flex: 0 0 auto;
+  width: 26px; height: 26px; border-radius: 50%;
+  display: inline-grid; place-items: center;
+  background: var(--c); color: #fff;
+  font-size: 11.5px; font-weight: 800; letter-spacing: -.02em;
+}
 .inhalt { flex: 1; min-width: 0; }
 .titel { font-weight: 600; overflow-wrap: anywhere; }
 .notiz {
@@ -258,10 +273,22 @@ header h1 { font-size: 19px; font-weight: 800; letter-spacing: -.02em; margin: 0
 /* ---------- Dialoge ---------- */
 dialog {
   width: min(480px, calc(100vw - 32px));
-  border: 1px solid var(--rand); border-radius: 20px; padding: 22px;
+  max-height: calc(100dvh - 32px); overflow: auto;
+  border: 1px solid var(--rand); border-radius: 20px; padding: 0 22px 22px;
   background: var(--karte); color: var(--text);
   box-shadow: var(--schatten-hoch);
 }
+/* Kopf mit Titel, Abbrechen und Speichern – bleibt beim Scrollen oben stehen */
+.dialog-kopf {
+  position: sticky; top: 0; z-index: 2;
+  display: flex; align-items: center; gap: 8px;
+  margin: 0 -22px 4px; padding: 16px 22px 12px;
+  background: var(--karte);
+  border-bottom: 1px solid var(--rand);
+}
+.dialog-kopf h3 { margin: 0 auto 0 0 !important; }
+dialog h4 { margin: 18px 0 6px; font-size: 14px; }
+.leise { color: var(--leise); font-size: 12px; font-weight: 500; }
 dialog[open] { animation: aufklappen .18s ease-out; }
 dialog::backdrop {
   background: rgba(15, 12, 40, .4);
@@ -301,6 +328,65 @@ dialog textarea { min-height: 90px; resize: vertical; }
 .knopf.primaer:hover { filter: brightness(1.08); }
 .knopf.gefahr { color: var(--rot); background: transparent; border-color: transparent; }
 .knopf.gefahr:hover { background: color-mix(in srgb, var(--rot) 10%, transparent); }
+
+/* Feldbeschriftung mit Mikrofon-Knopf */
+.feld-kopf { display: flex; align-items: flex-end; justify-content: space-between; }
+.mikro {
+  width: 32px; height: 32px; margin-bottom: 2px; border-radius: 50%;
+  border: 1px solid var(--rand); background: var(--feld); cursor: pointer; font-size: 15px;
+}
+.mikro.hoert { background: var(--rot); border-color: var(--rot); animation: pulsieren 1s ease-in-out infinite; }
+
+/* Zuweisung: runde Knöpfe mit Anfangsbuchstaben */
+.personen { display: flex; flex-wrap: wrap; gap: 8px; }
+.person {
+  --c: var(--leise);
+  width: 42px; height: 42px; border-radius: 50%; cursor: pointer;
+  border: 2px solid color-mix(in srgb, var(--c) 45%, transparent);
+  background: color-mix(in srgb, var(--c) 14%, transparent); color: var(--c);
+  font-size: 15px; font-weight: 800;
+}
+.person.aktiv {
+  background: var(--c); color: #fff; border-color: var(--c);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--c) 30%, transparent);
+}
+
+/* Familie verwalten */
+.familie-liste { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
+.mitglied { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 12px; background: var(--feld); }
+.mitglied-info { flex: 1; min-width: 0; }
+.mitglied-name { font-weight: 600; }
+.mitglied .klein {
+  padding: 5px 10px; font-size: 12px; font-weight: 600;
+  border: 1px solid var(--rand); border-radius: 999px; background: var(--karte); cursor: pointer;
+}
+.mitglied .klein.gefahr { color: var(--rot); }
+.mitglied-formular { margin-top: 8px; border-top: 1px solid var(--rand); }
+.zeile > .breit { flex: 3; }
+.zeile > .schmal { flex: 1; }
+.farben { display: flex; flex-wrap: wrap; gap: 8px; }
+.farbe {
+  --c: var(--leise);
+  width: 30px; height: 30px; border-radius: 50%; cursor: pointer;
+  border: 3px solid var(--karte); background: var(--c);
+  box-shadow: 0 0 0 1px var(--rand);
+}
+.farbe.aktiv { box-shadow: 0 0 0 2px var(--text); }
+
+/* Benachrichtigungen */
+.schalter { display: flex !important; align-items: center; gap: 10px; font-size: 14px !important; color: var(--text) !important; cursor: pointer; }
+.schalter input { width: 20px; height: 20px; accent-color: var(--akzent); }
+
+/* Umschalter Meine / Alle in der Kopfzeile */
+.ansicht {
+  display: flex; padding: 3px; border-radius: 999px;
+  background: var(--kopf-feld); border: 1px solid var(--kopf-rand);
+}
+.ansicht button {
+  padding: 5px 12px; border: none; border-radius: 999px; cursor: pointer;
+  background: transparent; color: var(--kopf-leise); font-size: 13px; font-weight: 600;
+}
+.ansicht button.aktiv { background: #e11d48; color: #fff; }
 
 /* Spaltenwahl im Dialog */
 .segmente { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
@@ -346,11 +432,21 @@ body.zieht .tab { border-style: dashed; border-color: var(--farbe); color: var(-
 
 /* ---------- Handy ---------- */
 @media (max-width: 700px) {
-  /* Zeile 1: Logo + Zahnrad, Zeile 2: Suche + Status */
+  /* Zeile 1: Logo, Status-Punkt, Zahnrad – Zeile 2: Suche + Meine/Alle – Zeile 3: Spalten */
   .menue-bereich { margin-left: auto; }
-  #suche { order: 5; flex: 1 1 50%; max-width: none; min-width: 0; }
-  .status { order: 6; margin-right: 0; }
+  .status { margin-right: 0; padding: 6px; font-size: 0; gap: 0; }
+  #suche { order: 5; flex: 1 1 40%; max-width: none; min-width: 0; }
+  .ansicht { order: 6; }
   .spaltenleiste { display: flex; order: 7; flex-basis: 100%; gap: 6px; }
+  /* Zweiter Griff rechts für den Daumen */
+  .griff.rechts { display: flex; width: 34px; }
+  .karte { padding-right: 0; }
+  /* Dialoge oben, damit die Tastatur nichts verdeckt */
+  dialog {
+    width: calc(100vw - 16px);
+    margin: max(8px, env(safe-area-inset-top)) auto auto;
+    max-height: calc(100dvh - 16px);
+  }
   .spalte { flex-basis: calc(100vw - 44px); }
   #board { gap: 12px; }
 }

@@ -29,6 +29,7 @@ function laden() {
     if (typeof k.position !== 'number') k.position = i * 1000;
     if (!k.geaendert) k.geaendert = new Date().toISOString();
     if (k.geloescht === undefined) k.geloescht = false;
+    if (k.zugewiesen === undefined) k.zugewiesen = null;
   });
   if (!Array.isArray(d.ausstehend)) d.ausstehend = d.karten.map(k => k.id);
   if (d.nutzerId === undefined) d.nutzerId = null;
@@ -38,7 +39,7 @@ function laden() {
 function beispielDaten() {
   const jetzt = new Date().toISOString();
   const karte = (titel, notiz, prio, spalte, position) =>
-    ({ id: neueId(), titel, notiz, prio, faellig: '', spalte, position, geaendert: jetzt, geloescht: false });
+    ({ id: neueId(), titel, notiz, prio, faellig: '', spalte, position, geaendert: jetzt, geloescht: false, zugewiesen: null });
   return {
     karten: [
       karte('Willkommen! Tippe auf eine Karte zum Bearbeiten', 'Am Griff ⠿ links kannst du Karten in andere Spalten ziehen.', 'niedrig', 'offen', 0),
@@ -92,6 +93,23 @@ function kartenDerSpalte(spalte) {
     .sort((a, b) => a.position - b.position);
 }
 
+// Ansicht "meine" (mir zugewiesen) oder "alle" – nur wirksam, wenn eine Familie da ist
+let ansicht = 'alle';
+try { ansicht = localStorage.getItem('kanban-ansicht') || 'alle'; } catch (e) { /* egal */ }
+
+function inAnsicht(k) {
+  return ansicht !== 'meine' || !familieAktiv() || k.zugewiesen === meinMitglied.id;
+}
+
+document.getElementById('ansicht').addEventListener('click', e => {
+  const knopf = e.target.closest('[data-ansicht]');
+  if (!knopf) return;
+  ansicht = knopf.dataset.ansicht;
+  try { localStorage.setItem('kanban-ansicht', ansicht); } catch (e) { /* egal */ }
+  familieOberflaeche();
+  zeichnen();
+});
+
 // Position für eine Karte ganz unten in der Spalte
 function positionAmEnde(spalte) {
   const karten = kartenDerSpalte(spalte);
@@ -135,7 +153,7 @@ function zeichnen() {
   board.innerHTML = '';
 
   for (const sp of SPALTEN) {
-    const karten = kartenDerSpalte(sp.id);
+    const karten = kartenDerSpalte(sp.id).filter(inAnsicht);
     const sichtbar = karten.filter(k => !suche || (k.titel + ' ' + k.notiz).toLowerCase().includes(suche));
 
     const spalte = el('section', 'spalte');
@@ -146,7 +164,7 @@ function zeichnen() {
     if (sp.id === 'erledigt' && karten.length > 0) {
       const leeren = el('button', 'klein', 'Leeren');
       leeren.onclick = () => {
-        if (confirm('Alle erledigten Aufgaben löschen?')) {
+        if (confirm(karten.length + ' erledigte Aufgaben' + (ansicht === 'meine' && familieAktiv() ? ' von dir' : '') + ' löschen?')) {
           for (const k of karten) {
             k.geloescht = true;
             markieren(k);
@@ -183,7 +201,7 @@ function leisteZeichnen() {
     const tab = el('button', 'tab');
     tab.type = 'button';
     tab.dataset.spalte = sp.id;
-    tab.append(el('span', '', sp.name), el('span', 'tab-anzahl', kartenDerSpalte(sp.id).length));
+    tab.append(el('span', '', sp.name), el('span', 'tab-anzahl', kartenDerSpalte(sp.id).filter(inAnsicht).length));
     tab.onclick = () => {
       const spalte = board.querySelector('.spalte[data-spalte="' + sp.id + '"]');
       if (spalte) spalte.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
@@ -225,8 +243,11 @@ function karteElement(k) {
   const karte = el('div', 'karte' + (k.prio ? ' prio-' + k.prio : ''));
   karte.dataset.id = k.id;
 
+  // Griffe links und rechts – rechts ist auf dem Handy gut mit dem Daumen erreichbar
   const griff = el('div', 'griff', '⠿');
   griff.title = 'Ziehen zum Verschieben';
+  const griffRechts = el('div', 'griff rechts', '⠿');
+  griffRechts.title = 'Ziehen zum Verschieben';
 
   const inhalt = el('div', 'inhalt');
   inhalt.append(el('div', 'titel', k.titel));
@@ -246,6 +267,9 @@ function karteElement(k) {
   if (etiketten.children.length) inhalt.append(etiketten);
 
   karte.append(griff, inhalt);
+  const person = familieAktiv() && mitgliedNach(k.zugewiesen);
+  if (person) karte.append(avatarElement(person));
+  karte.append(griffRechts);
   karte.addEventListener('click', e => {
     if (!e.target.closest('.griff')) dialogOeffnen(k.id);
   });
@@ -285,13 +309,16 @@ let bearbeiteId = null; // null bedeutet: neue Karte
 
 function dialogOeffnen(id, spalte) {
   bearbeiteId = id;
-  const k = id ? daten.karten.find(x => x.id === id) : { titel: '', notiz: '', prio: '', faellig: '', spalte };
+  // Neue Aufgabe in der Ansicht "Meine" ist automatisch mir zugewiesen
+  const vorschlag = ansicht === 'meine' && familieAktiv() ? meinMitglied.id : null;
+  const k = id ? daten.karten.find(x => x.id === id) : { titel: '', notiz: '', prio: '', faellig: '', spalte, zugewiesen: vorschlag };
   document.getElementById('dialogTitel').textContent = id ? 'Aufgabe bearbeiten' : 'Neue Aufgabe';
   fTitel.value = k.titel;
   fNotiz.value = k.notiz;
   fPrio.value = k.prio;
   fFaellig.value = k.faellig;
   spalteWaehlen(k.spalte);
+  zuweisungZeigen(k.zugewiesen);
   loeschenKnopf.style.display = id ? '' : 'none';
   dialog.showModal();
   if (!id) fTitel.focus();
@@ -304,11 +331,13 @@ formular.addEventListener('submit', e => {
     notiz: fNotiz.value.trim(),
     prio: fPrio.value,
     faellig: fFaellig.value,
-    spalte: gewaehlteSpalte
+    spalte: gewaehlteSpalte,
+    zugewiesen: gewaehlteZuweisung
   };
   if (!werte.titel) return;
 
   let k = daten.karten.find(x => x.id === bearbeiteId);
+  const vorherZugewiesen = k ? k.zugewiesen : null;
   if (k) {
     // Bei Spaltenwechsel ans Ende der neuen Spalte setzen
     if (k.spalte !== werte.spalte) werte.position = positionAmEnde(werte.spalte);
@@ -319,6 +348,7 @@ formular.addEventListener('submit', e => {
     daten.karten.push(k);
   }
   markieren(k);
+  melden(k, vorherZugewiesen);
   dialog.close();
   uebernehmen();
 });
@@ -435,6 +465,7 @@ function ziehenBeenden() {
     k.position = andere.length ? andere[0].position - 1000 : 0;
     k.spalte = zielSpalte;
     markieren(k);
+    melden(k, k.zugewiesen);
     uebernehmen();
     hinweisZeigen('Verschoben nach „' + SPALTEN.find(s => s.id === zielSpalte).name + '“');
     return;
@@ -454,8 +485,58 @@ function ziehenBeenden() {
   k.spalte = karte.parentElement.dataset.spalte;
 
   markieren(k);
+  melden(k, k.zugewiesen);
   uebernehmen();
 }
+
+// ---------- Diktieren (Spracherkennung des Browsers) ----------
+
+const Spracherkennung = window.SpeechRecognition || window.webkitSpeechRecognition;
+let erkennung = null;
+
+for (const knopf of document.querySelectorAll('.mikro')) {
+  if (!Spracherkennung) continue;
+  knopf.hidden = false;
+  knopf.textContent = '🎤';
+  knopf.onclick = () => diktieren(knopf, document.getElementById(knopf.dataset.feld));
+}
+
+function diktieren(knopf, feld) {
+  // Zweiter Tipp beendet das Diktat
+  if (erkennung) {
+    erkennung.stop();
+    return;
+  }
+  erkennung = new Spracherkennung();
+  erkennung.lang = 'de-DE';
+  erkennung.interimResults = true;
+  erkennung.continuous = feld.tagName === 'TEXTAREA';
+  // Diktierter Text wird an den vorhandenen angehängt
+  const vorher = feld.value.trim() ? feld.value.trim() + ' ' : '';
+
+  erkennung.onresult = e => {
+    let text = '';
+    for (let i = 0; i < e.results.length; i++) text += e.results[i][0].transcript;
+    text = text.trim();
+    if (!vorher) text = text.charAt(0).toUpperCase() + text.slice(1);
+    feld.value = (vorher + text).slice(0, feld.maxLength > 0 ? feld.maxLength : undefined);
+  };
+  erkennung.onerror = e => {
+    if (e.error === 'not-allowed' || e.error === 'service-not-allowed') hinweisZeigen('Mikrofon ist nicht erlaubt');
+    else if (e.error !== 'aborted' && e.error !== 'no-speech') hinweisZeigen('Diktieren hat nicht geklappt');
+  };
+  erkennung.onend = () => {
+    knopf.classList.remove('hoert');
+    erkennung = null;
+  };
+  knopf.classList.add('hoert');
+  erkennung.start();
+}
+
+// Diktat beenden, wenn der Dialog geschlossen wird
+dialog.addEventListener('close', () => {
+  if (erkennung) erkennung.abort();
+});
 
 // ---------- Einstellungsmenü ----------
 
@@ -487,7 +568,7 @@ document.getElementById('exportKnopf').onclick = () => {
   const blob = new Blob([JSON.stringify({ karten }, null, 2)], { type: 'application/json' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = 'kanban-' + heute() + '.json';
+  a.download = 'family-kanban-' + heute() + '.json';
   a.click();
   URL.revokeObjectURL(a.href);
 };
@@ -536,7 +617,8 @@ function importieren(neue) {
       faellig: /^\d{4}-\d{2}-\d{2}$/.test(n.faellig) ? n.faellig : '',
       spalte: SPALTEN.some(s => s.id === n.spalte) ? n.spalte : 'offen',
       position: typeof n.position === 'number' ? n.position : i * 1000,
-      geloescht: false
+      geloescht: false,
+      zugewiesen: typeof n.zugewiesen === 'string' && mitgliedNach(n.zugewiesen) ? n.zugewiesen : null
     });
     markieren(k);
   });

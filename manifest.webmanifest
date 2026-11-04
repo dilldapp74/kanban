@@ -1,7 +1,7 @@
 {
-  "name": "Mein Kanban",
-  "short_name": "Kanban",
-  "description": "Persönliches Kanban-Board mit Abgleich zwischen allen Geräten",
+  "name": "Family Kanban",
+  "short_name": "Family Kanban",
+  "description": "Kanban-Board für die ganze Familie – Aufgaben teilen, zuweisen und auf allen Geräten abgleichen",
   "lang": "de",
   "id": "./",
   "start_url": "./",

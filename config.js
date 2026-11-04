@@ -13,3 +13,8 @@
 
 const SUPABASE_URL = 'https://niwyndovxqsgxxlsxvrs.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_nMdVy5IVFa7OjEsfR9U5EQ_7YUEuw9L';
+
+// Öffentlicher Schlüssel für Push-Benachrichtigungen (VAPID). Der passende private
+// Schlüssel liegt nur als Geheimnis "VAPID_PRIVATE_KEY" bei der Supabase Edge Function.
+// Leer lassen = keine Benachrichtigungen.
+const VAPID_PUBLIC_KEY = 'BFJoFS7Y6D-SqOYR-KDmyEK-z5A2lgyn5kDA2HRsx72FqEi76OljLHw3okJSbXdDapRNP1kiTNvAvuFeuAIZOnc';
