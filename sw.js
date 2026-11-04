@@ -2,7 +2,7 @@
 // Strategie: immer zuerst aus dem Netz laden (damit Updates sofort ankommen),
 // bei fehlender Verbindung die zuletzt gespeicherte Fassung verwenden.
 
-const CACHE = 'kanban-v7';
+const CACHE = 'kanban-v8';
 
 const DATEIEN = [
   './',

@@ -388,6 +388,8 @@ board.addEventListener('pointerdown', e => {
   const geist = karte.cloneNode(true);
   geist.classList.add('geist');
   geist.style.width = r.width + 'px';
+  // Um den Griffpunkt drehen/verkleinern – so bleibt die Kopie unter dem Finger, egal ob links oder rechts gegriffen
+  geist.style.transformOrigin = (e.clientX - r.left) + 'px ' + (e.clientY - r.top) + 'px';
   document.body.append(geist);
 
   karte.classList.add('gezogen');
@@ -435,7 +437,17 @@ window.addEventListener('pointermove', e => {
 });
 
 window.addEventListener('pointerup', ziehenBeenden);
-window.addEventListener('pointercancel', ziehenBeenden);
+window.addEventListener('pointercancel', ziehenAbbrechen);
+
+// Vom System abgebrochen (z. B. Wischgeste): nichts verschieben, alten Zustand zeigen
+function ziehenAbbrechen() {
+  if (!ziehen) return;
+  ziehen.geist.remove();
+  ziehen = null;
+  document.body.classList.remove('zieht');
+  for (const t of leiste.children) t.classList.remove('ziel');
+  zeichnen();
+}
 
 function spalteBeiX(x) {
   return [...board.querySelectorAll('.spalte')].find(s => {
