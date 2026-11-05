@@ -14,11 +14,13 @@ allen Geräten und Familienmitgliedern ab.
 - **Familie:** mehrere Mitglieder, auch ohne eigenes Konto (z. B. Kinder); jede Aufgabe lässt sich
   mit einem Tipp auf die Anfangsbuchstaben einem Mitglied zuweisen
 - Ansicht **„Meine“** (mir zugewiesen) oder **„Alle“**; alle Mitglieder dürfen alle Aufgaben ändern
+- **Private Aufgaben** (🔒): gehören automatisch dem Ersteller, erscheinen nur unter „Meine“ und
+  werden anderen Mitgliedern von der Datenbank gar nicht erst ausgeliefert
 - **Diktieren** von Titel und Notiz (Spracherkennung des Browsers)
 - **Push-Benachrichtigungen:** neue Zuweisung, Änderung an meinen Aufgaben, morgens die heute fälligen
 - Verschieben per Ziehen am Griff ⠿ – auf dem Handy links und rechts an jeder Karte
 - Handy: feste Spaltenleiste oben zum Springen und als Ablageziel beim Ziehen;
-  im Bearbeiten-Dialog stehen Speichern/Abbrechen oben (die Tastatur verdeckt sie nicht)
+  die Knopfleiste der Dialoge bleibt unten über der Tastatur stehen (`interactive-widget=resizes-content`)
 - Suche, Echtzeit-Abgleich, offline nutzbar (Änderungen werden nachgeholt)
 - Installierbar (PWA): Android „Zum Startbildschirm hinzufügen“, macOS Safari „Zum Dock hinzufügen“
 - Helles und dunkles Design, Backup als JSON-Datei (Einstellungen ⚙)
@@ -66,6 +68,7 @@ Eine Supabase-Datenbank ist **eine Familie**.
 | `id` | Text-ID, wird im Browser erzeugt |
 | `user_id` | wer die Karte angelegt hat (setzt die Datenbank) |
 | `zugewiesen` | Mitglied, dem die Aufgabe gehört (oder leer) |
+| `privat` | nur für den Ersteller sichtbar; ein Trigger weist die Aufgabe dann immer dem Ersteller zu |
 | `titel`, `notiz` | Inhalt |
 | `prio` | `''`, `niedrig`, `mittel`, `hoch` |
 | `faellig` | Datum `JJJJ-MM-TT` oder leer |
@@ -81,7 +84,10 @@ Eine Supabase-Datenbank ist **eine Familie**.
 - Alle Karten liegen zusätzlich im `localStorage` des Geräts → das Board funktioniert offline.
 - Jede Änderung setzt `geaendert`, merkt die Karte als „ausstehend“ und lädt sie per `upsert` hoch.
   Fehlgeschlagenes wird beim nächsten Abgleich nachgeholt. Lehnt die Datenbank eine einzelne Karte
-  ab (Prüfregel), wird sie übersprungen statt den ganzen Abgleich zu blockieren.
+  ab (Prüfregel oder Zugriffsschutz), wird sie übersprungen statt den ganzen Abgleich zu blockieren.
+- Beim vollständigen Abgleich werden lokale Karten entfernt, die der Server nicht mehr liefert
+  (z. B. von jemand anderem privat gestellt). Supabase liefert standardmäßig höchstens 1000 Zeilen –
+  bei mehr Karten muss der Abruf seitenweise erfolgen.
 - Abgeglichen wird beim Start, beim Zurückkehren zur App, bei wiederhergestellter Verbindung
   und live über Supabase Realtime (Karten und Mitglieder).
 - Konflikte: pro Karte gewinnt die Fassung mit dem neueren `geaendert`.
@@ -103,7 +109,7 @@ Der private VAPID-Schlüssel liegt nur als Geheimnis `VAPID_PRIVATE_KEY` bei der
 ### Sicherheit
 
 - Row Level Security: Nur verknüpfte Familienmitglieder (`ist_mitglied()`) lesen und ändern Karten
-  und Mitglieder. Sich selbst kann man nicht entfernen.
+  und Mitglieder; private Karten nur ihr Ersteller. Sich selbst kann man nicht entfernen.
 - Minimale Tabellenrechte: `anon` hat keine. `authenticated` darf Karten lesen, anlegen und ändern
   (Spaltenrechte: Ersteller `user_id` ist nicht änderbar), Mitglieder lesen/anlegen/ändern/entfernen
   (die Konto-Verknüpfung `user_id` nur über `mitglied_verknuepfen()`). Kein `DELETE` auf Karten,

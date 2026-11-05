@@ -137,6 +137,7 @@ async function abgleichen() {
     const { data, error } = await sb.from('karten').select('*');
     if (error) throw error;
     zusammenfuehren(data);
+    nichtMehrSichtbareEntfernen(data);
     statusNachAbgleich();
   } catch (e) {
     console.warn('Abgleich fehlgeschlagen:', e);
@@ -191,22 +192,35 @@ async function hochladen() {
   meldungenSenden();
 }
 
-// Erst alle Karten auf einmal. Lehnt die Datenbank etwas ab (Prüfregel verletzt),
-// jede einzeln versuchen – so blockiert eine ungültige Karte nicht den ganzen Abgleich.
+// Erst alle Karten auf einmal. Lehnt die Datenbank etwas ab (Prüfregel verletzt oder Karte
+// inzwischen privat), jede einzeln versuchen – so blockiert eine Karte nicht den ganzen Abgleich.
 async function zeilenHochladen(zeilen) {
   const { error } = await sb.from('karten').upsert(zeilen);
   if (!error) return;
-  if (!regelVerletzt(error)) throw error;
+  if (!abgelehnt(error)) throw error;
   for (const zeile of zeilen) {
     const { error: fehler } = await sb.from('karten').upsert(zeile);
-    if (fehler && !regelVerletzt(fehler)) throw fehler;
+    if (fehler && !abgelehnt(fehler)) throw fehler;
     if (fehler) console.warn('Karte von der Datenbank abgelehnt und übersprungen:', zeile.id, fehler.message);
   }
 }
 
-// Fehlercodes 23… = Prüfregel oder Verweis verletzt (z. B. unbekannte Spalte)
-function regelVerletzt(fehler) {
-  return /^23/.test(fehler.code || '');
+// 23… = Prüfregel oder Verweis verletzt (z. B. unbekannte Spalte),
+// 42501 = Zugriffsschutz (z. B. Karte hat ein anderer inzwischen privat gestellt)
+function abgelehnt(fehler) {
+  return /^23/.test(fehler.code || '') || fehler.code === '42501';
+}
+
+// Karten, die der Server nicht (mehr) liefert – z. B. von jemand anderem privat gestellt –,
+// auch hier entfernen. Noch nicht hochgeladene eigene Karten bleiben erhalten.
+function nichtMehrSichtbareEntfernen(zeilen) {
+  const aufServer = new Set(zeilen.map(z => z.id));
+  const vorher = daten.karten.length;
+  daten.karten = daten.karten.filter(k => aufServer.has(k.id) || daten.ausstehend.includes(k.id));
+  if (daten.karten.length !== vorher) {
+    speichern();
+    zeichnen();
+  }
 }
 
 // Karte in eine Datenbankzeile umwandeln (user_id = Ersteller, setzt die Datenbank selbst)
@@ -215,7 +229,8 @@ function zeileAus(k) {
     id: k.id, titel: k.titel, notiz: k.notiz, prio: k.prio, faellig: k.faellig,
     spalte: k.spalte, position: k.position, geaendert: k.geaendert, geloescht: k.geloescht,
     // Zuweisung an ein inzwischen entferntes Mitglied nicht hochladen
-    zugewiesen: k.zugewiesen && mitgliedNach(k.zugewiesen) ? k.zugewiesen : null
+    zugewiesen: k.zugewiesen && mitgliedNach(k.zugewiesen) ? k.zugewiesen : null,
+    privat: !!k.privat
   };
 }
 
@@ -226,9 +241,14 @@ function zusammenfuehren(zeilen) {
     const fassung = {
       id: z.id, titel: z.titel, notiz: z.notiz, prio: z.prio, faellig: z.faellig,
       spalte: z.spalte, position: z.position, geaendert: z.geaendert, geloescht: z.geloescht,
-      zugewiesen: z.zugewiesen || null
+      zugewiesen: z.zugewiesen || null, privat: !!z.privat, ersteller: z.user_id || null
     };
     const lokal = daten.karten.find(k => k.id === z.id);
+    // Ersteller auch bei älteren lokalen Karten nachtragen (bestimmt, wer "privat" setzen darf)
+    if (lokal && !lokal.ersteller && z.user_id) {
+      lokal.ersteller = z.user_id;
+      etwasNeu = true;
+    }
     if (!lokal) {
       daten.karten.push(fassung);
       etwasNeu = true;

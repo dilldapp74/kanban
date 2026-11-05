@@ -63,13 +63,18 @@ let gewaehlteZuweisung = null;
 
 function zuweisungZeigen(gewaehlt) {
   document.getElementById('zuweisungBereich').hidden = !familieAktiv();
+  // Private Aufgaben gehören immer mir – dann lässt sich die Zuweisung nicht ändern
+  const gesperrt = familieAktiv() && fPrivat.checked;
+  if (gesperrt) gewaehlt = meinMitglied.id;
   gewaehlteZuweisung = gewaehlt && mitgliedNach(gewaehlt) ? gewaehlt : null;
+  fZuweisung.classList.toggle('gesperrt', gesperrt);
   fZuweisung.innerHTML = '';
 
   const niemand = el('button', 'person niemand', '–');
   niemand.type = 'button';
   niemand.title = 'Niemand';
   niemand.classList.toggle('aktiv', !gewaehlteZuweisung);
+  niemand.disabled = gesperrt;
   niemand.onclick = () => zuweisungZeigen(null);
   fZuweisung.append(niemand);
 
@@ -79,12 +84,17 @@ function zuweisungZeigen(gewaehlt) {
     knopf.title = m.name;
     knopf.style.setProperty('--c', m.farbe);
     knopf.classList.toggle('aktiv', m.id === gewaehlteZuweisung);
+    knopf.disabled = gesperrt;
     knopf.onclick = () => zuweisungZeigen(m.id);
     fZuweisung.append(knopf);
   }
   const m = mitgliedNach(gewaehlteZuweisung);
-  fZuweisungName.textContent = m ? '· ' + m.name : '· niemand';
+  fZuweisungName.textContent = (m ? '· ' + m.name : '· niemand') + (gesperrt ? ' (privat)' : '');
 }
+
+// Privat-Schalter im Dialog: Zuweisung sofort auf mich setzen und sperren
+const fPrivat = document.getElementById('fPrivat');
+fPrivat.addEventListener('change', () => zuweisungZeigen(gewaehlteZuweisung));
 
 // ---------- Familie verwalten ----------
 

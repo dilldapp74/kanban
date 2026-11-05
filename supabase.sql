@@ -70,6 +70,22 @@ create table if not exists public.karten (
 );
 
 alter table public.karten add column if not exists zugewiesen uuid references public.mitglieder (id) on delete set null;
+-- Private Aufgaben sieht und ändert nur, wer sie angelegt hat (siehe Zugriffsschutz unten)
+alter table public.karten add column if not exists privat boolean not null default false;
+
+-- Private Aufgaben gehören immer ihrem Ersteller – auch wenn ein Gerät etwas anderes schickt
+create or replace function public.privat_zuordnen() returns trigger
+language plpgsql security definer set search_path = '' as $$
+begin
+  if new.privat then
+    new.zugewiesen := (select id from public.mitglieder where user_id = new.user_id);
+  end if;
+  return new;
+end $$;
+
+drop trigger if exists privat_zuordnen on public.karten;
+create trigger privat_zuordnen before insert or update on public.karten
+  for each row execute function public.privat_zuordnen();
 
 create index if not exists karten_user_id_idx on public.karten (user_id);
 create index if not exists karten_zugewiesen_idx on public.karten (zugewiesen);
@@ -147,7 +163,7 @@ drop policy if exists "Eigene Karten ändern" on public.karten;
 
 drop policy if exists "Familie liest Karten" on public.karten;
 create policy "Familie liest Karten" on public.karten
-  for select to authenticated using ((select public.ist_mitglied()));
+  for select to authenticated using ((select public.ist_mitglied()) and (not privat or user_id = (select auth.uid())));
 
 drop policy if exists "Familie legt Karten an" on public.karten;
 create policy "Familie legt Karten an" on public.karten
@@ -155,7 +171,9 @@ create policy "Familie legt Karten an" on public.karten
 
 drop policy if exists "Familie ändert Karten" on public.karten;
 create policy "Familie ändert Karten" on public.karten
-  for update to authenticated using ((select public.ist_mitglied())) with check ((select public.ist_mitglied()));
+  for update to authenticated
+  using ((select public.ist_mitglied()) and (not privat or user_id = (select auth.uid())))
+  with check ((select public.ist_mitglied()) and (not privat or user_id = (select auth.uid())));
 
 drop policy if exists "Familie sieht Mitglieder" on public.mitglieder;
 create policy "Familie sieht Mitglieder" on public.mitglieder
@@ -177,7 +195,7 @@ create policy "Familie entfernt Mitglieder" on public.mitglieder
 -- Spaltenrechte: Ersteller (user_id) und Konto-Verknüpfung (user_id) kann die App nicht verändern.
 revoke all on table public.karten, public.mitglieder, public.push_abos from anon, authenticated;
 grant select, insert on table public.karten to authenticated;
-grant update (id, titel, notiz, prio, faellig, spalte, position, geaendert, geloescht, zugewiesen)
+grant update (id, titel, notiz, prio, faellig, spalte, position, geaendert, geloescht, zugewiesen, privat)
   on table public.karten to authenticated;
 grant select, delete on table public.mitglieder to authenticated;
 grant insert (name, kuerzel, farbe, email) on table public.mitglieder to authenticated;
@@ -185,7 +203,7 @@ grant update (name, kuerzel, farbe, email, benachrichtigungen) on table public.m
 
 revoke all on function public.ist_mitglied(), public.mitglied_verknuepfen(),
   public.push_abo_speichern(text, text, text), public.push_abo_loeschen(text),
-  public.mitglied_entfernt() from public, anon;
+  public.mitglied_entfernt(), public.privat_zuordnen() from public, anon;
 grant execute on function public.ist_mitglied(), public.mitglied_verknuepfen(),
   public.push_abo_speichern(text, text, text), public.push_abo_loeschen(text) to authenticated;
 

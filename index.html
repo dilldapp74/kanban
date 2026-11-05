@@ -4,7 +4,8 @@
 <meta charset="UTF-8">
 <!-- Sicherheit: Nur eigene Dateien, die Supabase-Bibliothek und Verbindungen zu Supabase sind erlaubt -->
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self'; img-src 'self' data: blob:; connect-src 'self' https://cdn.jsdelivr.net https://*.supabase.co wss://*.supabase.co; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!-- interactive-widget: Android verkleinert die Seite um die Tastatur, so bleiben die Dialog-Knöpfe sichtbar -->
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
 <meta name="theme-color" content="#09090b">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -13,7 +14,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
-<link rel="stylesheet" href="style.css?v=10">
+<link rel="stylesheet" href="style.css?v=11">
 </head>
 <body>
 
@@ -62,13 +63,11 @@
 
 <div id="toast" class="toast" role="status" hidden></div>
 
-<!-- Aufgabe bearbeiten. Speichern/Abbrechen stehen oben, damit die Handy-Tastatur sie nicht verdeckt. -->
+<!-- Aufgabe bearbeiten. Die Knopfleiste unten bleibt beim Scrollen und über der Tastatur stehen. -->
 <dialog id="dialog">
   <form id="formular">
     <div class="dialog-kopf">
       <h3 id="dialogTitel">Aufgabe</h3>
-      <button type="button" class="knopf" id="abbrechenKnopf">Abbrechen</button>
-      <button type="submit" class="knopf primaer">Speichern</button>
     </div>
     <div class="feld-kopf">
       <label for="fTitel">Titel</label>
@@ -80,6 +79,9 @@
       <button type="button" class="mikro" data-feld="fNotiz" aria-label="Notiz diktieren" title="Diktieren" hidden></button>
     </div>
     <textarea id="fNotiz" maxlength="5000"></textarea>
+    <label class="schalter privat-schalter" id="privatBereich" hidden>
+      <input type="checkbox" id="fPrivat"> 🔒 Privat – nur ich sehe diese Aufgabe
+    </label>
     <div id="zuweisungBereich" hidden>
       <label>Zugewiesen an <span id="fZuweisungName" class="leise"></span></label>
       <div id="fZuweisung" class="personen"></div>
@@ -101,8 +103,12 @@
     </div>
     <label>Spalte</label>
     <div id="fSpalte" class="segmente"></div>
-    <div class="aktionen">
+    <div class="dialog-fuss">
       <button type="button" class="knopf gefahr" id="loeschenKnopf">Löschen</button>
+      <div class="rechts">
+        <button type="button" class="knopf" id="abbrechenKnopf">Abbrechen</button>
+        <button type="submit" class="knopf primaer">Speichern</button>
+      </div>
     </div>
   </form>
 </dialog>
@@ -112,8 +118,6 @@
   <form id="kontoFormular">
     <div class="dialog-kopf">
       <h3>Anmelden</h3>
-      <button type="button" class="knopf" id="kAbbrechenKnopf">Abbrechen</button>
-      <button type="submit" class="knopf primaer">Anmelden</button>
     </div>
     <p class="hinweis">Mit einem Konto werden die Aufgaben der Familie zwischen allen Geräten abgeglichen.</p>
     <label for="kEmail">E-Mail</label>
@@ -121,6 +125,12 @@
     <label for="kPasswort">Passwort</label>
     <input id="kPasswort" type="password" required minlength="6" autocomplete="current-password">
     <p id="kMeldung" class="meldung"></p>
+    <div class="dialog-fuss">
+      <div class="rechts">
+        <button type="button" class="knopf" id="kAbbrechenKnopf">Abbrechen</button>
+        <button type="submit" class="knopf primaer">Anmelden</button>
+      </div>
+    </div>
   </form>
 </dialog>
 
@@ -129,14 +139,18 @@
   <form id="passwortFormular">
     <div class="dialog-kopf">
       <h3>Passwort ändern</h3>
-      <button type="button" class="knopf" id="pAbbrechenKnopf">Abbrechen</button>
-      <button type="submit" class="knopf primaer">Speichern</button>
     </div>
     <label for="pNeu">Neues Passwort (mindestens 8 Zeichen)</label>
     <input id="pNeu" type="password" required minlength="8" autocomplete="new-password">
     <label for="pWiederholung">Wiederholen</label>
     <input id="pWiederholung" type="password" required minlength="8" autocomplete="new-password">
     <p id="pMeldung" class="meldung"></p>
+    <div class="dialog-fuss">
+      <div class="rechts">
+        <button type="button" class="knopf" id="pAbbrechenKnopf">Abbrechen</button>
+        <button type="submit" class="knopf primaer">Speichern</button>
+      </div>
+    </div>
   </form>
 </dialog>
 
@@ -194,14 +208,14 @@
 </dialog>
 
 <!-- Reihenfolge wichtig: erst Einstellungen, dann Bibliothek, dann eigener Code -->
-<script src="config.js?v=10"></script>
+<script src="config.js?v=11"></script>
 <!-- integrity: Der Browser führt die Bibliothek nur aus, wenn sie Byte für Byte unverändert ist.
      Bei einem Versionswechsel neu berechnen (siehe README). -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.110.0/dist/umd/supabase.js"
         integrity="sha384-3wY11tldQ5+yWqAvmTN4XtQvnjoTva0cV15O/O/O5NTtp0ivVopSzLOzsVXWZse9"
         crossorigin="anonymous"></script>
-<script src="sync.js?v=10"></script>
-<script src="familie.js?v=10"></script>
-<script src="app.js?v=10"></script>
+<script src="sync.js?v=11"></script>
+<script src="familie.js?v=11"></script>
+<script src="app.js?v=11"></script>
 </body>
 </html>

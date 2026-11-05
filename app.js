@@ -30,6 +30,8 @@ function laden() {
     if (!k.geaendert) k.geaendert = new Date().toISOString();
     if (k.geloescht === undefined) k.geloescht = false;
     if (k.zugewiesen === undefined) k.zugewiesen = null;
+    if (k.privat === undefined) k.privat = false;
+    if (k.ersteller === undefined) k.ersteller = null;
   });
   if (!Array.isArray(d.ausstehend)) d.ausstehend = d.karten.map(k => k.id);
   if (d.nutzerId === undefined) d.nutzerId = null;
@@ -97,8 +99,16 @@ function kartenDerSpalte(spalte) {
 let ansicht = 'alle';
 try { ansicht = localStorage.getItem('kanban-ansicht') || 'alle'; } catch (e) { /* egal */ }
 
+// Private Aufgaben erscheinen nur unter "Meine" (andere bekommen sie gar nicht erst vom Server)
 function inAnsicht(k) {
-  return ansicht !== 'meine' || !familieAktiv() || k.zugewiesen === meinMitglied.id;
+  if (!familieAktiv()) return true;
+  if (ansicht === 'meine') return k.zugewiesen === meinMitglied.id;
+  return !k.privat;
+}
+
+// Privat stellen darf nur, wer die Aufgabe angelegt hat
+function darfPrivatSetzen(k) {
+  return familieAktiv() && (!k || !k.ersteller || k.ersteller === nutzer.id);
 }
 
 document.getElementById('ansicht').addEventListener('click', e => {
@@ -255,6 +265,7 @@ function karteElement(k) {
 
   // Etiketten für Priorität und Fälligkeit
   const etiketten = el('div', 'etiketten');
+  if (k.privat && familieAktiv()) etiketten.append(el('span', 'etikett privat', '🔒 Privat'));
   if (k.prio) etiketten.append(el('span', 'etikett prio-' + k.prio, PRIO_NAMEN[k.prio]));
   if (k.faellig) {
     let art = '';
@@ -318,6 +329,8 @@ function dialogOeffnen(id, spalte) {
   fPrio.value = k.prio;
   fFaellig.value = k.faellig;
   spalteWaehlen(k.spalte);
+  document.getElementById('privatBereich').hidden = !darfPrivatSetzen(id ? k : null);
+  fPrivat.checked = !!k.privat;
   zuweisungZeigen(k.zugewiesen);
   loeschenKnopf.style.display = id ? '' : 'none';
   dialog.showModal();
@@ -338,13 +351,16 @@ formular.addEventListener('submit', e => {
 
   let k = daten.karten.find(x => x.id === bearbeiteId);
   const vorherZugewiesen = k ? k.zugewiesen : null;
+  // Privat nur übernehmen, wenn der Schalter angeboten wurde; private Aufgaben gehören mir
+  if (!document.getElementById('privatBereich').hidden) werte.privat = fPrivat.checked;
+  if (werte.privat) werte.zugewiesen = meinMitglied.id;
   if (k) {
     // Bei Spaltenwechsel ans Ende der neuen Spalte setzen
     if (k.spalte !== werte.spalte) werte.position = positionAmEnde(werte.spalte);
     Object.assign(k, werte);
   } else {
     // Karte wurde inzwischen auf einem anderen Gerät gelöscht oder ist neu
-    k = { id: neueId(), ...werte, position: positionAmEnde(werte.spalte), geloescht: false };
+    k = { id: neueId(), privat: false, ...werte, position: positionAmEnde(werte.spalte), geloescht: false, ersteller: nutzer ? nutzer.id : null };
     daten.karten.push(k);
   }
   markieren(k);

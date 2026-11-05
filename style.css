@@ -267,6 +267,7 @@ header h1 { font-size: 19px; font-weight: 800; letter-spacing: -.02em; margin: 0
 .etikett.prio-mittel { --c: var(--gelb); }
 .etikett.prio-niedrig { --c: var(--gruen); }
 .etikett.datum { --c: var(--leise); }
+.etikett.privat { --c: var(--text); }
 .etikett.datum.heute { --c: var(--gelb); }
 .etikett.datum.ueberfaellig { --c: var(--rot); }
 
@@ -287,6 +288,20 @@ dialog {
   border-bottom: 1px solid var(--rand);
 }
 .dialog-kopf h3 { margin: 0 auto 0 0 !important; }
+/* Knopfleiste unten – bleibt beim Scrollen und über der Handy-Tastatur stehen */
+.dialog-fuss {
+  position: sticky; bottom: 0; z-index: 2;
+  display: flex; align-items: center; gap: 8px;
+  margin: 20px -22px -22px; padding: 12px 22px calc(14px + env(safe-area-inset-bottom));
+  background: var(--karte);
+  border-top: 1px solid var(--rand);
+}
+.dialog-fuss .rechts { margin-left: auto; display: flex; gap: 8px; }
+
+/* Privat-Schalter und gesperrte Zuweisung */
+.privat-schalter { margin-top: 14px !important; }
+.personen.gesperrt .person { opacity: .35; cursor: not-allowed; }
+.personen.gesperrt .person.aktiv { opacity: 1; }
 dialog h4 { margin: 18px 0 6px; font-size: 14px; }
 .leise { color: var(--leise); font-size: 12px; font-weight: 500; }
 dialog[open] { animation: aufklappen .18s ease-out; }
