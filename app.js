@@ -99,11 +99,11 @@ function kartenDerSpalte(spalte) {
 let ansicht = 'alle';
 try { ansicht = localStorage.getItem('kanban-ansicht') || 'alle'; } catch (e) { /* egal */ }
 
-// Private Aufgaben erscheinen nur unter "Meine" (andere bekommen sie gar nicht erst vom Server)
+// "Meine" = mir zugewiesen, "Alle" = alles. Private Aufgaben anderer liefert der Server
+// gar nicht erst aus – eigene private erscheinen also in beiden Ansichten nur bei mir.
 function inAnsicht(k) {
-  if (!familieAktiv()) return true;
-  if (ansicht === 'meine') return k.zugewiesen === meinMitglied.id;
-  return !k.privat;
+  if (!familieAktiv() || ansicht !== 'meine') return true;
+  return k.zugewiesen === meinMitglied.id;
 }
 
 // Privat stellen darf nur, wer die Aufgabe angelegt hat

@@ -14,8 +14,8 @@ allen Geräten und Familienmitgliedern ab.
 - **Familie:** mehrere Mitglieder, auch ohne eigenes Konto (z. B. Kinder); jede Aufgabe lässt sich
   mit einem Tipp auf die Anfangsbuchstaben einem Mitglied zuweisen
 - Ansicht **„Meine“** (mir zugewiesen) oder **„Alle“**; alle Mitglieder dürfen alle Aufgaben ändern
-- **Private Aufgaben** (🔒): gehören automatisch dem Ersteller, erscheinen nur unter „Meine“ und
-  werden anderen Mitgliedern von der Datenbank gar nicht erst ausgeliefert
+- **Private Aufgaben** (🔒): gehören automatisch dem Ersteller und sind nur für ihn sichtbar
+  (unter „Meine“ und „Alle“) – anderen Mitgliedern liefert die Datenbank sie gar nicht erst aus
 - **Diktieren** von Titel und Notiz (Spracherkennung des Browsers)
 - **Push-Benachrichtigungen:** neue Zuweisung, Änderung an meinen Aufgaben, morgens die heute fälligen
 - Verschieben per Ziehen am Griff ⠿ – auf dem Handy links und rechts an jeder Karte
