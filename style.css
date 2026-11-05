@@ -22,6 +22,10 @@
   --kopf-leise: #a1a1aa;
   --kopf-feld: rgba(255, 255, 255, .08);
   --kopf-rand: rgba(255, 255, 255, .12);
+  --kopf-akzent: #f43f5e;         /* Hervorhebung in der Kopfzeile (Meine/Alle, Zahnrad) */
+  --logo1: #f43f5e;
+  --logo2: #be123c;
+  --logo-schatten: rgba(225, 29, 72, .45);
 }
 /* Farben – dunkel (folgt der Systemeinstellung) */
 @media (prefers-color-scheme: dark) {
@@ -42,6 +46,132 @@
     --schatten-hoch: 0 14px 36px rgba(0, 0, 0, .6);
   }
 }
+
+/* ---------- Weitere Farbschemata (Auswahl im ⚙-Menü, gespeichert pro Gerät) ----------
+   Jedes Schema setzt hell und dunkel dieselben Variablen, sonst würde das helle
+   Schema die dunklen Grundfarben überschreiben. */
+
+/* Blau – wie die erste Fassung: helle Kopfzeile, blaue Akzente */
+[data-thema="blau"] {
+  --bg1: #f1f3f7;
+  --bg2: #f8fafc;
+  --schimmer: rgba(37, 99, 235, .08);
+  --glas: rgba(228, 232, 239, .75);
+  --karte: #ffffff;
+  --feld: #f1f3f7;
+  --text: #1d2433;
+  --leise: #667085;
+  --rand: rgba(16, 24, 40, .1);
+  --akzent: #2563eb;
+  --akzent2: #1d4ed8;
+  --rot: #dc2626;
+  --schatten: 0 1px 2px rgba(16, 24, 40, .06), 0 3px 10px rgba(16, 24, 40, .06);
+  --schatten-hoch: 0 12px 32px rgba(16, 24, 40, .16);
+  --kopf: rgba(241, 243, 247, .92);
+  --kopf-text: #1d2433;
+  --kopf-leise: #667085;
+  --kopf-feld: #ffffff;
+  --kopf-rand: #d0d5dd;
+  --kopf-akzent: #2563eb;
+  --logo1: #3b82f6;
+  --logo2: #1d4ed8;
+  --logo-schatten: rgba(37, 99, 235, .35);
+}
+@media (prefers-color-scheme: dark) {
+  [data-thema="blau"] {
+    --bg1: #111418;
+    --bg2: #151a21;
+    --schimmer: rgba(96, 165, 250, .10);
+    --glas: rgba(255, 255, 255, .04);
+    --karte: #1b2028;
+    --feld: #111418;
+    --text: #e6e9ef;
+    --leise: #98a2b3;
+    --rand: rgba(255, 255, 255, .08);
+    --akzent: #60a5fa;
+    --akzent2: #2563eb;
+    --rot: #f87171;
+    --schatten: 0 1px 2px rgba(0, 0, 0, .4), 0 4px 12px rgba(0, 0, 0, .3);
+    --schatten-hoch: 0 14px 36px rgba(0, 0, 0, .6);
+    --kopf: rgba(17, 20, 24, .92);
+    --kopf-text: #e6e9ef;
+    --kopf-leise: #98a2b3;
+    --kopf-feld: rgba(255, 255, 255, .06);
+    --kopf-rand: rgba(255, 255, 255, .12);
+    --kopf-akzent: #3b82f6;
+    --logo1: #60a5fa;
+    --logo2: #2563eb;
+    --logo-schatten: rgba(59, 130, 246, .4);
+  }
+}
+
+/* Pastell – fröhlich: Kopfzeile im Verlauf Rosa → Flieder → Mint, Akzente in Pink und Lila */
+[data-thema="pastell"] {
+  --bg1: #fdf4ff;
+  --bg2: #f0fdfa;
+  --schimmer: rgba(236, 72, 153, .14);
+  --glas: rgba(255, 255, 255, .6);
+  --karte: #ffffff;
+  --feld: #faf5ff;
+  --text: #3b0764;
+  --leise: #8b6aa8;
+  --rand: rgba(147, 51, 234, .14);
+  --akzent: #db2777;
+  --akzent2: #9333ea;
+  --rot: #e11d48;
+  --schatten: 0 1px 2px rgba(88, 28, 135, .06), 0 3px 12px rgba(88, 28, 135, .08);
+  --schatten-hoch: 0 12px 32px rgba(88, 28, 135, .18);
+  --kopf: linear-gradient(120deg, rgba(249, 168, 212, .92), rgba(196, 181, 253, .92) 55%, rgba(153, 246, 228, .92));
+  --kopf-text: #3b0764;
+  --kopf-leise: #6b21a8;
+  --kopf-feld: rgba(255, 255, 255, .55);
+  --kopf-rand: rgba(255, 255, 255, .8);
+  --kopf-akzent: #c026d3;
+  --logo1: #ec4899;
+  --logo2: #8b5cf6;
+  --logo-schatten: rgba(236, 72, 153, .4);
+}
+@media (prefers-color-scheme: dark) {
+  [data-thema="pastell"] {
+    --bg1: #1a1025;
+    --bg2: #10181c;
+    --schimmer: rgba(236, 72, 153, .18);
+    --glas: rgba(255, 255, 255, .04);
+    --karte: #251933;
+    --feld: #1a1025;
+    --text: #fbe8ff;
+    --leise: #c4a6dc;
+    --rand: rgba(244, 208, 255, .1);
+    --akzent: #f472b6;
+    --akzent2: #a855f7;
+    --rot: #fb7185;
+    --schatten: 0 1px 2px rgba(0, 0, 0, .4), 0 4px 12px rgba(0, 0, 0, .3);
+    --schatten-hoch: 0 14px 36px rgba(0, 0, 0, .6);
+    --kopf: linear-gradient(120deg, rgba(131, 24, 67, .95), rgba(76, 29, 149, .95) 55%, rgba(19, 78, 74, .95));
+    --kopf-text: #fdf2f8;
+    --kopf-leise: #f0c4e8;
+    --kopf-feld: rgba(255, 255, 255, .1);
+    --kopf-rand: rgba(255, 255, 255, .16);
+    --kopf-akzent: #ec4899;
+    --logo1: #f472b6;
+    --logo2: #a855f7;
+    --logo-schatten: rgba(236, 72, 153, .45);
+  }
+}
+
+/* Farbschema-Auswahl im Menü */
+.themen { display: flex; gap: 6px; padding: 0 6px 6px; }
+.thema-knopf {
+  flex: 1; display: flex; flex-direction: column; align-items: center; gap: 5px;
+  padding: 8px 4px; border-radius: 10px; cursor: pointer;
+  border: 2px solid transparent; background: var(--feld);
+  font-size: 12px; font-weight: 600;
+}
+.thema-knopf.aktiv { border-color: var(--akzent); }
+.thema-knopf .muster { width: 30px; height: 30px; border-radius: 50%; box-shadow: 0 0 0 1px var(--rand); }
+.thema-knopf[data-wahl="rot"] .muster { background: linear-gradient(135deg, #18181b 50%, #e11d48 50%); }
+.thema-knopf[data-wahl="blau"] .muster { background: linear-gradient(135deg, #e4e8ef 50%, #2563eb 50%); }
+.thema-knopf[data-wahl="pastell"] .muster { background: linear-gradient(135deg, #f9a8d4, #c4b5fd 55%, #99f6e4); }
 
 * { box-sizing: border-box; }
 html, body { margin: 0; }
@@ -72,8 +202,8 @@ header {
 .marke { display: flex; align-items: center; gap: 10px; }
 .logo {
   width: 32px; height: 32px; border-radius: 9px;
-  background: linear-gradient(135deg, #f43f5e, #be123c);
-  box-shadow: 0 4px 14px rgba(225, 29, 72, .45);
+  background: linear-gradient(135deg, var(--logo1), var(--logo2));
+  box-shadow: 0 4px 14px var(--logo-schatten);
 }
 header h1 { font-size: 19px; font-weight: 800; letter-spacing: -.02em; margin: 0; }
 
@@ -97,7 +227,8 @@ header h1 { font-size: 19px; font-weight: 800; letter-spacing: -.02em; margin: 0
 @keyframes pulsieren { 50% { opacity: .3; } }
 
 /* Einstellungen */
-.menue-bereich { position: relative; }
+/* z-index: Menü liegt über der Spaltenleiste, die im Code danach kommt */
+.menue-bereich { position: relative; z-index: 20; }
 .icon-knopf {
   width: 38px; height: 38px; border-radius: 50%;
   display: grid; place-items: center;
@@ -105,7 +236,7 @@ header h1 { font-size: 19px; font-weight: 800; letter-spacing: -.02em; margin: 0
   cursor: pointer;
 }
 .icon-knopf svg { width: 19px; height: 19px; transition: transform .4s ease; }
-.icon-knopf:hover, .icon-knopf[aria-expanded="true"] { color: #f43f5e; }
+.icon-knopf:hover, .icon-knopf[aria-expanded="true"] { color: var(--kopf-akzent); }
 .icon-knopf:hover svg, .icon-knopf[aria-expanded="true"] svg { transform: rotate(60deg); }
 .menue {
   position: absolute; right: 0; top: calc(100% + 8px);
@@ -392,7 +523,7 @@ dialog textarea { min-height: 90px; resize: vertical; }
   padding: 5px 12px; border: none; border-radius: 999px; cursor: pointer;
   background: transparent; color: var(--kopf-leise); font-size: 13px; font-weight: 600;
 }
-.ansicht button.aktiv { background: #e11d48; color: #fff; }
+.ansicht button.aktiv { background: var(--kopf-akzent); color: #fff; }
 
 /* Spaltenwahl im Dialog */
 .segmente { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }

@@ -23,7 +23,9 @@ allen Geräten und Familienmitgliedern ab.
   die Knopfleiste der Dialoge bleibt unten über der Tastatur stehen (`interactive-widget=resizes-content`)
 - Echtzeit-Abgleich, offline nutzbar (Änderungen werden nachgeholt)
 - Installierbar (PWA): Android „Zum Startbildschirm hinzufügen“, macOS Safari „Zum Dock hinzufügen“
-- Helles und dunkles Design, Backup als JSON-Datei (Einstellungen ⚙)
+- Drei Farbschemata (**Rot & Schwarz**, **Blau**, **Pastell**) je hell und dunkel – Auswahl unter ⚙,
+  gespeichert pro Gerät
+- Backup als JSON-Datei (Einstellungen ⚙)
 
 ## Technik
 
@@ -33,7 +35,8 @@ keine Abhängigkeiten außer der Supabase-Bibliothek (per CDN, feste Version, mi
 | Datei | Zweck |
 |---|---|
 | `index.html` | Seitengerüst, Dialoge, Einstellungsmenü |
-| `style.css` | Gestaltung inkl. Dunkelmodus und Handy-Layout |
+| `style.css` | Gestaltung inkl. Farbschemata, Dunkelmodus und Handy-Layout |
+| `thema.js` | setzt das gespeicherte Farbschema schon im `<head>` (kein Aufblitzen) |
 | `app.js` | Board: Daten, Ansichten, Zeichnen, Bearbeiten, Ziehen & Ablegen, Diktieren, Backup |
 | `sync.js` | Abgleich mit Supabase: Anmeldung, Passwort, Hoch-/Herunterladen, Echtzeit |
 | `familie.js` | Mitglieder, Zuweisung, „Familie verwalten“, Benachrichtigungen (App-Seite) |

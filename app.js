@@ -585,6 +585,10 @@ document.addEventListener('keydown', e => {
   if (e.key === 'Escape') menueUmschalten(false);
 });
 
+// Farbschema wechseln (themaSetzen steht in thema.js); das Menü bleibt offen zum Ausprobieren
+for (const knopf of document.querySelectorAll('.thema-knopf')) knopf.onclick = () => themaSetzen(knopf.dataset.wahl);
+themaSetzen(aktuellesThema);
+
 // ---------- Sichern & Laden (Backup als Datei) ----------
 
 document.getElementById('exportKnopf').onclick = () => {
