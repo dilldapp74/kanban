@@ -21,7 +21,7 @@ allen Geräten und Familienmitgliedern ab.
 - Verschieben per Ziehen am Griff ⠿ – auf dem Handy links und rechts an jeder Karte
 - Handy: feste Spaltenleiste oben zum Springen und als Ablageziel beim Ziehen;
   die Knopfleiste der Dialoge bleibt unten über der Tastatur stehen (`interactive-widget=resizes-content`)
-- Suche, Echtzeit-Abgleich, offline nutzbar (Änderungen werden nachgeholt)
+- Echtzeit-Abgleich, offline nutzbar (Änderungen werden nachgeholt)
 - Installierbar (PWA): Android „Zum Startbildschirm hinzufügen“, macOS Safari „Zum Dock hinzufügen“
 - Helles und dunkles Design, Backup als JSON-Datei (Einstellungen ⚙)
 

@@ -143,7 +143,6 @@ function uebernehmen() {
 // ---------- Zeichnen ----------
 
 const board = document.getElementById('board');
-const suchfeld = document.getElementById('suche');
 
 // Hilfsfunktion: Element mit Klasse und Text erzeugen
 function el(tag, klasse, text) {
@@ -157,14 +156,12 @@ function zeichnen() {
   // Während des Ziehens nicht neu zeichnen – das passiert danach
   if (ziehen) return;
 
-  const suche = suchfeld.value.trim().toLowerCase();
   // Scrollposition merken, sonst springt das Handy nach jeder Änderung zur ersten Spalte
   const scrollX = board.scrollLeft, scrollY = window.scrollY;
   board.innerHTML = '';
 
   for (const sp of SPALTEN) {
     const karten = kartenDerSpalte(sp.id).filter(inAnsicht);
-    const sichtbar = karten.filter(k => !suche || (k.titel + ' ' + k.notiz).toLowerCase().includes(suche));
 
     const spalte = el('section', 'spalte');
     spalte.dataset.spalte = sp.id;
@@ -187,7 +184,7 @@ function zeichnen() {
 
     const liste = el('div', 'karten');
     liste.dataset.spalte = sp.id;
-    for (const k of sichtbar) liste.append(karteElement(k));
+    for (const k of karten) liste.append(karteElement(k));
 
     const neu = el('button', 'neu', '+ Aufgabe hinzufügen');
     neu.onclick = () => dialogOeffnen(null, sp.id);
@@ -287,7 +284,6 @@ function karteElement(k) {
   return karte;
 }
 
-suchfeld.addEventListener('input', zeichnen);
 
 // ---------- Bearbeiten-Dialog ----------
 

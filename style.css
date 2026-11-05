@@ -96,15 +96,6 @@ header h1 { font-size: 19px; font-weight: 800; letter-spacing: -.02em; margin: 0
 .status.fehler::before { background: var(--gelb); }
 @keyframes pulsieren { 50% { opacity: .3; } }
 
-#suche {
-  flex: 1 1 180px; max-width: 300px;
-  padding: 8px 14px; border-radius: 999px;
-  border: 1px solid var(--kopf-rand); background: var(--kopf-feld); color: var(--kopf-text);
-  outline: none;
-}
-#suche::placeholder { color: var(--kopf-leise); }
-#suche:focus { border-color: #f43f5e; box-shadow: 0 0 0 3px rgba(244, 63, 94, .3); }
-
 /* Einstellungen */
 .menue-bereich { position: relative; }
 .icon-knopf {
@@ -447,11 +438,11 @@ body.zieht .tab { border-style: dashed; border-color: var(--farbe); color: var(-
 
 /* ---------- Handy ---------- */
 @media (max-width: 700px) {
-  /* Zeile 1: Logo, Status-Punkt, Zahnrad – Zeile 2: Suche + Meine/Alle – Zeile 3: Spalten */
+  /* Zeile 1: Logo, Status-Punkt, Zahnrad – Zeile 2: Meine/Alle in voller Breite – Zeile 3: Spalten */
   .menue-bereich { margin-left: auto; }
   .status { margin-right: 0; padding: 6px; font-size: 0; gap: 0; }
-  #suche { order: 5; flex: 1 1 40%; max-width: none; min-width: 0; }
-  .ansicht { order: 6; }
+  .ansicht { order: 6; flex-basis: 100%; }
+  .ansicht button { flex: 1; padding: 8px 12px; font-size: 14px; }
   .spaltenleiste { display: flex; order: 7; flex-basis: 100%; gap: 6px; }
   /* Zweiter Griff rechts für den Daumen */
   .griff.rechts { display: flex; width: 34px; }
