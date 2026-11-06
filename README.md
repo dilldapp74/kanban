@@ -8,7 +8,7 @@ allen Geräten und Familienmitgliedern ab.
 
 ## Funktionen
 
-- Vier Spalten: **Backlog → Up Next → In Arbeit → Erledigt**
+- Vier Spalten: **Backlog → Up Next → Heute/In Arbeit → Erledigt**
 - Karten mit Titel, Notiz, Priorität (niedrig/mittel/hoch) und Fälligkeitsdatum
   („Heute“, „Morgen“, überfällige Aufgaben rot)
 - **Familie:** mehrere Mitglieder, auch ohne eigenes Konto (z. B. Kinder); jede Aufgabe lässt sich

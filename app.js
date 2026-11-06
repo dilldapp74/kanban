@@ -2,10 +2,11 @@
 
 const SPEICHER_SCHLUESSEL = 'kanban-daten-v1';
 
+// kurz = Beschriftung in der schmalen Spaltenleiste auf dem Handy (falls der Name zu lang ist)
 const SPALTEN = [
   { id: 'backlog', name: 'Backlog' },
   { id: 'offen', name: 'Up Next' },
-  { id: 'arbeit', name: 'In Arbeit' },
+  { id: 'arbeit', name: 'Heute/In Arbeit', kurz: 'Heute' },
   { id: 'erledigt', name: 'Erledigt' }
 ];
 
@@ -210,7 +211,7 @@ function leisteZeichnen() {
     const tab = el('button', 'tab');
     tab.type = 'button';
     tab.dataset.spalte = sp.id;
-    tab.append(el('span', '', sp.name), el('span', 'tab-anzahl', kartenDerSpalte(sp.id).filter(inAnsicht).length));
+    tab.append(el('span', '', sp.kurz || sp.name), el('span', 'tab-anzahl', kartenDerSpalte(sp.id).filter(inAnsicht).length));
     tab.onclick = () => {
       const spalte = board.querySelector('.spalte[data-spalte="' + sp.id + '"]');
       if (spalte) spalte.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
