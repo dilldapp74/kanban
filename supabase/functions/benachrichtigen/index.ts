@@ -1,7 +1,9 @@
 // Supabase Edge Function "benachrichtigen" – verschickt Push-Nachrichten.
 //
 // Aufrufe:
-//   { art: "zuweisung" | "aenderung", karte_id }  aus der App (mit Anmelde-Token)
+//   { art: "zuweisung" | "aenderung", karte_id, neu? }  aus der App (mit Anmelde-Token)
+//      neu = Mitglieder, die gerade erst zugeordnet wurden – sie bekommen "Aufgabe gegeben",
+//      alle anderen Zugeordneten "Aufgabe geändert". (Ältere App-Fassungen schicken kein "neu".)
 //   { art: "morgens" }                              täglich per Cron (siehe supabase.sql)
 //
 // Einstellungen im Dashboard: "Verify JWT" AUS (die Funktion prüft das Token selbst),
@@ -52,8 +54,8 @@ async function sendeAn(userId: string, titel: string, text: string, tag: string)
   }
 }
 
-// Zuweisung oder Änderung einer Karte melden
-async function karteMelden(req: Request, art: string, karteId: string) {
+// Zuweisung oder Änderung einer Karte an alle zugeordneten Personen (außer dem Absender) melden
+async function karteMelden(req: Request, art: string, karteId: string, neu: string[] | null) {
   const token = (req.headers.get("Authorization") ?? "").replace(/^Bearer\s+/i, "");
   const { data: { user } } = await admin.auth.getUser(token);
   if (!user) return antwort("nicht angemeldet", 401);
@@ -62,19 +64,23 @@ async function karteMelden(req: Request, art: string, karteId: string) {
   if (!absender) return antwort("kein Familienmitglied", 403);
 
   const { data: karte } = await admin.from("karten")
-    .select("titel, spalte, zugewiesen, geloescht").eq("id", karteId).maybeSingle();
-  if (!karte || karte.geloescht || !karte.zugewiesen || karte.zugewiesen === absender.id) return antwort("nichts zu tun");
+    .select("titel, spalte, zugewiesene, geloescht").eq("id", karteId).maybeSingle();
+  const empfaenger = ((karte?.zugewiesene ?? []) as string[]).filter((id) => id !== absender.id);
+  if (!karte || karte.geloescht || !empfaenger.length) return antwort("nichts zu tun");
 
-  const { data: ziel } = await admin.from("mitglieder")
-    .select("user_id, benachrichtigungen").eq("id", karte.zugewiesen).maybeSingle();
-  if (!ziel?.user_id) return antwort("Person nutzt die App nicht");
-  const einstellungen = ziel.benachrichtigungen ?? {};
+  const { data: ziele } = await admin.from("mitglieder")
+    .select("id, user_id, benachrichtigungen").in("id", empfaenger).not("user_id", "is", null);
 
-  if (art === "zuweisung" && einstellungen.zuweisung !== false) {
-    await sendeAn(ziel.user_id, `${absender.name} hat dir eine Aufgabe gegeben`, karte.titel, "karte-" + karteId);
-  } else if (art === "aenderung" && einstellungen.aenderung !== false) {
-    await sendeAn(ziel.user_id, `${absender.name} hat deine Aufgabe geändert`,
-      `${karte.titel} · ${SPALTEN[karte.spalte] ?? karte.spalte}`, "karte-" + karteId);
+  for (const ziel of ziele ?? []) {
+    const einstellungen = ziel.benachrichtigungen ?? {};
+    // Ohne "neu" (ältere App): bei "zuweisung" gelten alle als neu zugeordnet
+    const istNeu = neu ? neu.includes(ziel.id) : art === "zuweisung";
+    if (istNeu && einstellungen.zuweisung !== false) {
+      await sendeAn(ziel.user_id, `${absender.name} hat dir eine Aufgabe gegeben`, karte.titel, "karte-" + karteId);
+    } else if (!istNeu && einstellungen.aenderung !== false) {
+      await sendeAn(ziel.user_id, `${absender.name} hat deine Aufgabe geändert`,
+        `${karte.titel} · ${SPALTEN[karte.spalte] ?? karte.spalte}`, "karte-" + karteId);
+    }
   }
   return antwort("ok");
 }
@@ -91,7 +97,7 @@ async function morgenMeldung() {
     await admin.from("mitglieder").update({ letzte_tagesmeldung: heute }).eq("id", p.id);
 
     const { data: karten } = await admin.from("karten").select("titel, faellig")
-      .eq("zugewiesen", p.id).eq("geloescht", false).neq("spalte", "erledigt")
+      .contains("zugewiesene", [p.id]).eq("geloescht", false).neq("spalte", "erledigt")
       .neq("faellig", "").lte("faellig", heute).order("faellig");
     if (!karten?.length) continue;
 
@@ -108,7 +114,7 @@ async function morgenMeldung() {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return antwort("ok");
   if (req.method !== "POST") return antwort("nur POST", 405);
-  let body: { art?: string; karte_id?: string } = {};
+  let body: { art?: string; karte_id?: string; neu?: unknown } = {};
   try {
     body = await req.json();
   } catch {
@@ -116,7 +122,8 @@ Deno.serve(async (req) => {
   }
   if (body.art === "morgens") return await morgenMeldung();
   if ((body.art === "zuweisung" || body.art === "aenderung") && typeof body.karte_id === "string") {
-    return await karteMelden(req, body.art, body.karte_id);
+    const neu = Array.isArray(body.neu) ? body.neu.filter((x): x is string => typeof x === "string") : null;
+    return await karteMelden(req, body.art, body.karte_id, neu);
   }
   return antwort("unbekannte Art", 400);
 });

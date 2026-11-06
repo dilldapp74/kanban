@@ -73,13 +73,37 @@ alter table public.karten add column if not exists zugewiesen uuid references pu
 -- Private Aufgaben sieht und ändert nur, wer sie angelegt hat (siehe Zugriffsschutz unten)
 alter table public.karten add column if not exists privat boolean not null default false;
 
--- Private Aufgaben gehören immer ihrem Ersteller – auch wenn ein Gerät etwas anderes schickt
+-- Eine Aufgabe kann mehreren Mitgliedern gehören, die gemeinsam daran arbeiten.
+-- "zugewiesen" (erste Person der Liste) bleibt für ältere App-Fassungen erhalten.
+alter table public.karten add column if not exists zugewiesene uuid[] not null default '{}';
+update public.karten set zugewiesene = array[zugewiesen] where zugewiesen is not null and zugewiesene = '{}';
+
+-- Zuweisung prüfen, bevor eine Karte gespeichert wird:
+--  * ältere App-Fassungen schicken nur "zugewiesen" – daraus die Liste bilden
+--  * nur bestehende Mitglieder, keine doppelten Einträge (Reihenfolge bleibt)
+--  * private Aufgaben gehören immer ihrem Ersteller – auch wenn ein Gerät etwas anderes schickt
 create or replace function public.privat_zuordnen() returns trigger
 language plpgsql security definer set search_path = '' as $$
 begin
-  if new.privat then
-    new.zugewiesen := (select id from public.mitglieder where user_id = new.user_id);
+  if tg_op = 'UPDATE' and new.zugewiesene is not distinct from old.zugewiesene
+     and new.zugewiesen is distinct from old.zugewiesen then
+    new.zugewiesene := case when new.zugewiesen is null then '{}'::uuid[] else array[new.zugewiesen] end;
+  elsif tg_op = 'INSERT' and new.zugewiesene = '{}' and new.zugewiesen is not null then
+    new.zugewiesene := array[new.zugewiesen];
   end if;
+
+  new.zugewiesene := coalesce((
+    select array_agg(z.id order by z.nr) from (
+      select u.id, min(u.nr) as nr
+      from unnest(new.zugewiesene) with ordinality as u(id, nr)
+      where exists (select 1 from public.mitglieder m where m.id = u.id)
+      group by u.id
+    ) z), '{}');
+
+  if new.privat then
+    new.zugewiesene := coalesce((select array[id] from public.mitglieder where user_id = new.user_id), '{}');
+  end if;
+  new.zugewiesen := new.zugewiesene[1];
   return new;
 end $$;
 
@@ -89,6 +113,7 @@ create trigger privat_zuordnen before insert or update on public.karten
 
 create index if not exists karten_user_id_idx on public.karten (user_id);
 create index if not exists karten_zugewiesen_idx on public.karten (zugewiesen);
+create index if not exists karten_zugewiesene_idx on public.karten using gin (zugewiesene);
 
 -- Prüfregeln: Die Datenbank nimmt nur gültige Werte an (gleiche Grenzen wie in der App)
 alter table public.karten drop constraint if exists karten_id_laenge;
@@ -97,20 +122,23 @@ alter table public.karten drop constraint if exists karten_notiz_laenge;
 alter table public.karten drop constraint if exists karten_prio_wert;
 alter table public.karten drop constraint if exists karten_faellig_format;
 alter table public.karten drop constraint if exists karten_spalte_wert;
+alter table public.karten drop constraint if exists karten_zugewiesene_anzahl;
 alter table public.karten
   add constraint karten_id_laenge check (char_length(id) between 1 and 64),
   add constraint karten_titel_laenge check (char_length(titel) between 1 and 200),
   add constraint karten_notiz_laenge check (char_length(notiz) <= 5000),
   add constraint karten_prio_wert check (prio in ('', 'niedrig', 'mittel', 'hoch')),
   add constraint karten_faellig_format check (faellig = '' or faellig ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}$'),
-  add constraint karten_spalte_wert check (spalte in ('backlog', 'offen', 'arbeit', 'erledigt'));
+  add constraint karten_spalte_wert check (spalte in ('backlog', 'offen', 'arbeit', 'erledigt')),
+  add constraint karten_zugewiesene_anzahl check (cardinality(zugewiesene) <= 20);
 
--- Wird ein Mitglied entfernt, werden seine Aufgaben frei – mit neuem Zeitstempel,
+-- Wird ein Mitglied entfernt, verschwindet es aus allen Zuweisungen – mit neuem Zeitstempel,
 -- damit alle Geräte die Änderung übernehmen
 create or replace function public.mitglied_entfernt() returns trigger
 language plpgsql security definer set search_path = '' as $$
 begin
-  update public.karten set zugewiesen = null, geaendert = now() where zugewiesen = old.id;
+  update public.karten set zugewiesene = array_remove(zugewiesene, old.id), geaendert = now()
+    where old.id = any(zugewiesene) or zugewiesen = old.id;
   return old;
 end $$;
 
@@ -195,7 +223,7 @@ create policy "Familie entfernt Mitglieder" on public.mitglieder
 -- Spaltenrechte: Ersteller (user_id) und Konto-Verknüpfung (user_id) kann die App nicht verändern.
 revoke all on table public.karten, public.mitglieder, public.push_abos from anon, authenticated;
 grant select, insert on table public.karten to authenticated;
-grant update (id, titel, notiz, prio, faellig, spalte, position, geaendert, geloescht, zugewiesen, privat)
+grant update (id, titel, notiz, prio, faellig, spalte, position, geaendert, geloescht, zugewiesen, zugewiesene, privat)
   on table public.karten to authenticated;
 grant select, delete on table public.mitglieder to authenticated;
 grant insert (name, kuerzel, farbe, email) on table public.mitglieder to authenticated;

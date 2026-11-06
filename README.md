@@ -12,8 +12,9 @@ allen Geräten und Familienmitgliedern ab.
 - Karten mit Titel, Notiz, Priorität (niedrig/mittel/hoch) und Fälligkeitsdatum
   („Heute“, „Morgen“, überfällige Aufgaben rot)
 - **Familie:** mehrere Mitglieder, auch ohne eigenes Konto (z. B. Kinder); jede Aufgabe lässt sich
-  mit einem Tipp auf die Anfangsbuchstaben einem Mitglied zuweisen
-- Ansicht **„Meine“** (mir zugewiesen) oder **„Alle“**; alle Mitglieder dürfen alle Aufgaben ändern
+  mit einem Tipp auf die Anfangsbuchstaben einem oder **mehreren** Mitgliedern zuweisen, die dann
+  gemeinsam daran arbeiten
+- Ansicht **„Meine“** (mir – auch gemeinsam mit anderen – zugewiesen) oder **„Alle“**; alle Mitglieder dürfen alle Aufgaben ändern
 - **Private Aufgaben** (🔒): gehören automatisch dem Ersteller und sind nur für ihn sichtbar
   (unter „Meine“ und „Alle“) – anderen Mitgliedern liefert die Datenbank sie gar nicht erst aus
 - **Diktieren** von Titel und Notiz (Spracherkennung des Browsers)
@@ -70,8 +71,9 @@ Eine Supabase-Datenbank ist **eine Familie**.
 |---|---|
 | `id` | Text-ID, wird im Browser erzeugt |
 | `user_id` | wer die Karte angelegt hat (setzt die Datenbank) |
-| `zugewiesen` | Mitglied, dem die Aufgabe gehört (oder leer) |
-| `privat` | nur für den Ersteller sichtbar; ein Trigger weist die Aufgabe dann immer dem Ersteller zu |
+| `zugewiesene` | Liste der Mitglieder, denen die Aufgabe gehört (leer = niemand) |
+| `zugewiesen` | erste Person der Liste – setzt ein Trigger, nur noch für ältere App-Fassungen |
+| `privat` | nur für den Ersteller sichtbar; ein Trigger weist die Aufgabe dann immer (nur) dem Ersteller zu |
 | `titel`, `notiz` | Inhalt |
 | `prio` | `''`, `niedrig`, `mittel`, `hoch` |
 | `faellig` | Datum `JJJJ-MM-TT` oder leer |
@@ -102,8 +104,9 @@ Eine Supabase-Datenbank ist **eine Familie**.
    Das Abo wird über `push_abo_speichern()` gespeichert.
 2. Nach dem Hochladen meldet die App zugewiesene bzw. geänderte Karten an die Edge Function
    `benachrichtigen`. Diese prüft Anmeldung und Familienzugehörigkeit, liest die Karte selbst
-   aus der Datenbank und schickt die Nachricht an die Geräte der zugewiesenen Person
-   (nicht an sich selbst, nur wenn deren Einstellung es erlaubt).
+   aus der Datenbank und schickt die Nachricht an die Geräte aller zugewiesenen Personen
+   (nicht an sich selbst, nur wenn deren Einstellung es erlaubt). Neu Hinzugefügte bekommen
+   „Aufgabe gegeben“, die übrigen „Aufgabe geändert“.
 3. Morgens ruft ein Cron-Job (`pg_cron` + `pg_net`) die Funktion mit `{ "art": "morgens" }` auf –
    jede Person bekommt höchstens eine Meldung pro Tag.
 

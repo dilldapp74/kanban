@@ -59,23 +59,24 @@ function avatarElement(m, klasse) {
 
 const fZuweisung = document.getElementById('fZuweisung');
 const fZuweisungName = document.getElementById('fZuweisungName');
-let gewaehlteZuweisung = null;
+// Eine Aufgabe kann mehreren Personen gehören: jeder Knopf schaltet eine Person an oder ab
+let gewaehlteZuweisung = [];
 
 function zuweisungZeigen(gewaehlt) {
   document.getElementById('zuweisungBereich').hidden = !familieAktiv();
   // Private Aufgaben gehören immer mir – dann lässt sich die Zuweisung nicht ändern
   const gesperrt = familieAktiv() && fPrivat.checked;
-  if (gesperrt) gewaehlt = meinMitglied.id;
-  gewaehlteZuweisung = gewaehlt && mitgliedNach(gewaehlt) ? gewaehlt : null;
+  if (gesperrt) gewaehlt = [meinMitglied.id];
+  gewaehlteZuweisung = (gewaehlt || []).filter(id => mitgliedNach(id));
   fZuweisung.classList.toggle('gesperrt', gesperrt);
   fZuweisung.innerHTML = '';
 
   const niemand = el('button', 'person niemand', '–');
   niemand.type = 'button';
   niemand.title = 'Niemand';
-  niemand.classList.toggle('aktiv', !gewaehlteZuweisung);
+  niemand.classList.toggle('aktiv', !gewaehlteZuweisung.length);
   niemand.disabled = gesperrt;
-  niemand.onclick = () => zuweisungZeigen(null);
+  niemand.onclick = () => zuweisungZeigen([]);
   fZuweisung.append(niemand);
 
   for (const m of mitglieder) {
@@ -83,13 +84,17 @@ function zuweisungZeigen(gewaehlt) {
     knopf.type = 'button';
     knopf.title = m.name;
     knopf.style.setProperty('--c', m.farbe);
-    knopf.classList.toggle('aktiv', m.id === gewaehlteZuweisung);
+    const aktiv = gewaehlteZuweisung.includes(m.id);
+    knopf.classList.toggle('aktiv', aktiv);
+    knopf.setAttribute('aria-pressed', aktiv);
     knopf.disabled = gesperrt;
-    knopf.onclick = () => zuweisungZeigen(m.id);
+    knopf.onclick = () => zuweisungZeigen(aktiv
+      ? gewaehlteZuweisung.filter(id => id !== m.id)
+      : [...gewaehlteZuweisung, m.id]);
     fZuweisung.append(knopf);
   }
-  const m = mitgliedNach(gewaehlteZuweisung);
-  fZuweisungName.textContent = (m ? '· ' + m.name : '· niemand') + (gesperrt ? ' (privat)' : '');
+  const namen = gewaehlteZuweisung.map(id => mitgliedNach(id).name);
+  fZuweisungName.textContent = '· ' + (namen.length ? namen.join(', ') : 'niemand') + (gesperrt ? ' (privat)' : '');
 }
 
 // Privat-Schalter im Dialog: Zuweisung sofort auf mich setzen und sperren
@@ -240,7 +245,7 @@ mitgliedFormular.addEventListener('submit', async e => {
 });
 
 async function mitgliedEntfernen(m) {
-  if (!confirm(m.name + ' aus der Familie entfernen?\n\nAufgaben, die ' + m.name + ' zugewiesen sind, werden frei.'
+  if (!confirm(m.name + ' aus der Familie entfernen?\n\nBei Aufgaben, die ' + m.name + ' zugewiesen sind, wird ' + m.name + ' ausgetragen.'
     + (m.user_id ? '\n' + m.name + ' kann die App danach nicht mehr nutzen.' : ''))) return;
   const { error } = await sb.from('mitglieder').delete().eq('id', m.id);
   if (error) {
@@ -260,13 +265,19 @@ async function mitgliedEntfernen(m) {
 const pushMoeglich = 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window
   && typeof VAPID_PUBLIC_KEY === 'string' && VAPID_PUBLIC_KEY !== '';
 
-let meldungen = [];  // noch zu sendende Meldungen { karte_id, art }
+let meldungen = [];  // noch zu sendende Meldungen { art, karte_id, neu }
 
-// Merken, dass andere über diese Änderung informiert werden sollen
+// Merken, dass andere über diese Änderung informiert werden sollen.
+// "neu" = Personen, die gerade erst zugeordnet wurden ("Aufgabe gegeben");
+// alle anderen Zugeordneten bekommen "Aufgabe geändert".
 function melden(k, vorherZugewiesen) {
-  if (!familieAktiv() || k.geloescht || !k.zugewiesen || k.zugewiesen === meinMitglied.id) return;
-  const art = k.zugewiesen !== vorherZugewiesen ? 'zuweisung' : 'aenderung';
-  if (!meldungen.some(m => m.karte_id === k.id && m.art === art)) meldungen.push({ karte_id: k.id, art });
+  if (!familieAktiv() || k.geloescht) return;
+  const andere = k.zugewiesene.filter(id => id !== meinMitglied.id);
+  if (!andere.length) return;
+  const neu = andere.filter(id => !(vorherZugewiesen || []).includes(id));
+  let m = meldungen.find(x => x.karte_id === k.id);
+  if (!m) meldungen.push(m = { art: 'aenderung', karte_id: k.id, neu: [] });
+  for (const id of neu) if (!m.neu.includes(id)) m.neu.push(id);
 }
 
 // Nach erfolgreichem Hochladen aufgerufen (dann sieht der Server schon den neuen Stand)

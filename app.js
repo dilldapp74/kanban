@@ -29,7 +29,9 @@ function laden() {
     if (typeof k.position !== 'number') k.position = i * 1000;
     if (!k.geaendert) k.geaendert = new Date().toISOString();
     if (k.geloescht === undefined) k.geloescht = false;
-    if (k.zugewiesen === undefined) k.zugewiesen = null;
+    // Früher eine Person (zugewiesen), jetzt eine Liste (zugewiesene)
+    if (!Array.isArray(k.zugewiesene)) k.zugewiesene = k.zugewiesen ? [k.zugewiesen] : [];
+    delete k.zugewiesen;
     if (k.privat === undefined) k.privat = false;
     if (k.ersteller === undefined) k.ersteller = null;
   });
@@ -41,7 +43,7 @@ function laden() {
 function beispielDaten() {
   const jetzt = new Date().toISOString();
   const karte = (titel, notiz, prio, spalte, position) =>
-    ({ id: neueId(), titel, notiz, prio, faellig: '', spalte, position, geaendert: jetzt, geloescht: false, zugewiesen: null });
+    ({ id: neueId(), titel, notiz, prio, faellig: '', spalte, position, geaendert: jetzt, geloescht: false, zugewiesene: [] });
   return {
     karten: [
       karte('Willkommen! Tippe auf eine Karte zum Bearbeiten', 'Am Griff ⠿ links kannst du Karten in andere Spalten ziehen.', 'niedrig', 'offen', 0),
@@ -103,7 +105,7 @@ try { ansicht = localStorage.getItem('kanban-ansicht') || 'alle'; } catch (e) { 
 // gar nicht erst aus – eigene private erscheinen also in beiden Ansichten nur bei mir.
 function inAnsicht(k) {
   if (!familieAktiv() || ansicht !== 'meine') return true;
-  return k.zugewiesen === meinMitglied.id;
+  return k.zugewiesene.includes(meinMitglied.id);
 }
 
 // Privat stellen darf nur, wer die Aufgabe angelegt hat
@@ -275,8 +277,13 @@ function karteElement(k) {
   if (etiketten.children.length) inhalt.append(etiketten);
 
   karte.append(griff, inhalt);
-  const person = familieAktiv() && mitgliedNach(k.zugewiesen);
-  if (person) karte.append(avatarElement(person));
+  // Kürzel aller zugeordneten Personen, leicht überlappend
+  const personen = familieAktiv() ? k.zugewiesene.map(mitgliedNach).filter(Boolean) : [];
+  if (personen.length) {
+    const gruppe = el('div', 'avatare');
+    for (const p of personen) gruppe.append(avatarElement(p));
+    karte.append(gruppe);
+  }
   karte.append(griffRechts);
   karte.addEventListener('click', e => {
     if (!e.target.closest('.griff')) dialogOeffnen(k.id);
@@ -317,8 +324,8 @@ let bearbeiteId = null; // null bedeutet: neue Karte
 function dialogOeffnen(id, spalte) {
   bearbeiteId = id;
   // Neue Aufgabe in der Ansicht "Meine" ist automatisch mir zugewiesen
-  const vorschlag = ansicht === 'meine' && familieAktiv() ? meinMitglied.id : null;
-  const k = id ? daten.karten.find(x => x.id === id) : { titel: '', notiz: '', prio: '', faellig: '', spalte, zugewiesen: vorschlag };
+  const vorschlag = ansicht === 'meine' && familieAktiv() ? [meinMitglied.id] : [];
+  const k = id ? daten.karten.find(x => x.id === id) : { titel: '', notiz: '', prio: '', faellig: '', spalte, zugewiesene: vorschlag };
   document.getElementById('dialogTitel').textContent = id ? 'Aufgabe bearbeiten' : 'Neue Aufgabe';
   fTitel.value = k.titel;
   fNotiz.value = k.notiz;
@@ -327,7 +334,7 @@ function dialogOeffnen(id, spalte) {
   spalteWaehlen(k.spalte);
   document.getElementById('privatBereich').hidden = !darfPrivatSetzen(id ? k : null);
   fPrivat.checked = !!k.privat;
-  zuweisungZeigen(k.zugewiesen);
+  zuweisungZeigen(k.zugewiesene);
   loeschenKnopf.style.display = id ? '' : 'none';
   dialog.showModal();
   if (!id) fTitel.focus();
@@ -341,15 +348,15 @@ formular.addEventListener('submit', e => {
     prio: fPrio.value,
     faellig: fFaellig.value,
     spalte: gewaehlteSpalte,
-    zugewiesen: gewaehlteZuweisung
+    zugewiesene: [...gewaehlteZuweisung]
   };
   if (!werte.titel) return;
 
   let k = daten.karten.find(x => x.id === bearbeiteId);
-  const vorherZugewiesen = k ? k.zugewiesen : null;
+  const vorherZugewiesen = k ? k.zugewiesene : [];
   // Privat nur übernehmen, wenn der Schalter angeboten wurde; private Aufgaben gehören mir
   if (!document.getElementById('privatBereich').hidden) werte.privat = fPrivat.checked;
-  if (werte.privat) werte.zugewiesen = meinMitglied.id;
+  if (werte.privat) werte.zugewiesene = [meinMitglied.id];
   if (k) {
     // Bei Spaltenwechsel ans Ende der neuen Spalte setzen
     if (k.spalte !== werte.spalte) werte.position = positionAmEnde(werte.spalte);
@@ -489,7 +496,7 @@ function ziehenBeenden() {
     k.position = andere.length ? andere[0].position - 1000 : 0;
     k.spalte = zielSpalte;
     markieren(k);
-    melden(k, k.zugewiesen);
+    melden(k, k.zugewiesene);
     uebernehmen();
     hinweisZeigen('Verschoben nach „' + SPALTEN.find(s => s.id === zielSpalte).name + '“');
     return;
@@ -509,7 +516,7 @@ function ziehenBeenden() {
   k.spalte = karte.parentElement.dataset.spalte;
 
   markieren(k);
-  melden(k, k.zugewiesen);
+  melden(k, k.zugewiesene);
   uebernehmen();
 }
 
@@ -646,7 +653,9 @@ function importieren(neue) {
       spalte: SPALTEN.some(s => s.id === n.spalte) ? n.spalte : 'offen',
       position: typeof n.position === 'number' ? n.position : i * 1000,
       geloescht: false,
-      zugewiesen: typeof n.zugewiesen === 'string' && mitgliedNach(n.zugewiesen) ? n.zugewiesen : null
+      // Backups enthalten eine Liste (neu) oder eine einzelne Person (alt)
+      zugewiesene: (Array.isArray(n.zugewiesene) ? n.zugewiesene : [n.zugewiesen])
+        .filter(z => typeof z === 'string' && mitgliedNach(z))
     });
     markieren(k);
   });

@@ -228,8 +228,9 @@ function zeileAus(k) {
   return {
     id: k.id, titel: k.titel, notiz: k.notiz, prio: k.prio, faellig: k.faellig,
     spalte: k.spalte, position: k.position, geaendert: k.geaendert, geloescht: k.geloescht,
-    // Zuweisung an ein inzwischen entferntes Mitglied nicht hochladen
-    zugewiesen: k.zugewiesen && mitgliedNach(k.zugewiesen) ? k.zugewiesen : null,
+    // Zuweisungen an inzwischen entfernte Mitglieder nicht hochladen
+    // ("zugewiesen" = erste Person setzt die Datenbank selbst)
+    zugewiesene: k.zugewiesene.filter(z => mitgliedNach(z)),
     privat: !!k.privat
   };
 }
@@ -241,7 +242,8 @@ function zusammenfuehren(zeilen) {
     const fassung = {
       id: z.id, titel: z.titel, notiz: z.notiz, prio: z.prio, faellig: z.faellig,
       spalte: z.spalte, position: z.position, geaendert: z.geaendert, geloescht: z.geloescht,
-      zugewiesen: z.zugewiesen || null, privat: !!z.privat, ersteller: z.user_id || null
+      zugewiesene: Array.isArray(z.zugewiesene) ? z.zugewiesene : (z.zugewiesen ? [z.zugewiesen] : []),
+      privat: !!z.privat, ersteller: z.user_id || null
     };
     const lokal = daten.karten.find(k => k.id === z.id);
     // Ersteller auch bei älteren lokalen Karten nachtragen (bestimmt, wer "privat" setzen darf)

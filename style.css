@@ -358,7 +358,10 @@ header h1 { font-size: 19px; font-weight: 800; letter-spacing: -.02em; margin: 0
 .karte:hover .griff { opacity: 1; }
 /* Zweiter Griff rechts nur auf dem Handy (Daumen) – auf dem Mac genügt einer */
 .griff.rechts { display: none; }
-.karte .avatar { align-self: flex-start; margin: 1px 6px 0 2px; }
+.karte .avatare { align-self: flex-start; display: flex; margin: 1px 6px 0 2px; }
+/* Mehrere Personen: Kreise überlappen leicht, mit Rand in Kartenfarbe */
+.avatare .avatar { box-shadow: 0 0 0 2px var(--karte); }
+.avatare .avatar + .avatar { margin-left: -9px; }
 
 /* Kürzel-Kreis eines Familienmitglieds */
 .avatar {
