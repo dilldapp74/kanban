@@ -2,7 +2,7 @@
 // Strategie: immer zuerst aus dem Netz laden (damit Updates sofort ankommen),
 // bei fehlender Verbindung die zuletzt gespeicherte Fassung verwenden.
 
-const CACHE = 'kanban-v14';
+const CACHE = 'kanban-v15';
 
 const DATEIEN = [
   './',
@@ -37,10 +37,16 @@ self.addEventListener('fetch', ereignis => {
   const url = new URL(anfrage.url);
   // Nur die eigenen Dateien und die Supabase-Bibliothek – Datenbankzugriffe nie zwischenspeichern
   const eigene = url.origin === self.location.origin || url.hostname === 'cdn.jsdelivr.net';
-  if (anfrage.method !== 'GET' || !eigene) return;
+  // Versionsprüfung der App (?pruefen=…) nicht zwischenspeichern
+  if (anfrage.method !== 'GET' || !eigene || url.searchParams.has('pruefen')) return;
+
+  // Eigene Dateien immer beim Server nachfragen ("no-cache"): Sonst liefert der Browser-
+  // Zwischenspeicher bis zu 10 Minuten lang die alte Fassung (GitHub Pages: max-age=600).
+  // Unveränderte Dateien kosten dabei nur eine kurze Rückfrage (Antwort 304).
+  const netz = url.origin === self.location.origin ? fetch(anfrage, { cache: 'no-cache' }) : fetch(anfrage);
 
   ereignis.respondWith(
-    fetch(anfrage)
+    netz
       .then(antwort => {
         if (antwort.ok) {
           const kopie = antwort.clone();

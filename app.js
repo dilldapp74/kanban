@@ -670,3 +670,38 @@ syncStarten();
 if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
   navigator.serviceWorker.register('sw.js').catch(e => console.warn('Service Worker:', e));
 }
+
+// ---------- Neue Version erkennen ----------
+//
+// Die installierte App (v. a. im Mac-Dock) bleibt oft tagelang offen und lädt nie neu.
+// Deshalb beim Zurückkehren zur App und jede halbe Stunde nachsehen, ob index.html
+// eine neuere Versionsnummer (?v=…) enthält – dann neu laden, sobald kein Dialog offen ist.
+
+const eigeneVersion = (document.querySelector('script[src^="app.js?v="]') || {}).src?.match(/v=(\d+)/)?.[1];
+let letztePruefung = 0;
+
+async function aufNeueVersionPruefen() {
+  if (!eigeneVersion || !location.protocol.startsWith('http') || !navigator.onLine) return;
+  if (Date.now() - letztePruefung < 60 * 1000) return; // höchstens einmal pro Minute
+  letztePruefung = Date.now();
+  try {
+    const antwort = await fetch('./?pruefen=' + Date.now(), { cache: 'no-store' });
+    const neu = (await antwort.text()).match(/app\.js\?v=(\d+)/)?.[1];
+    if (!neu || neu === eigeneVersion) return;
+    navigator.serviceWorker?.getRegistration().then(r => r && r.update()).catch(() => {});
+    neuLadenWennFrei();
+  } catch (e) { /* offline oder Server nicht erreichbar – später erneut */ }
+}
+
+// Nicht mitten im Bearbeiten neu laden: warten, bis alle Dialoge zu sind
+function neuLadenWennFrei() {
+  if (document.querySelector('dialog[open]')) {
+    setTimeout(neuLadenWennFrei, 5000);
+    return;
+  }
+  location.reload();
+}
+
+document.addEventListener('visibilitychange', () => { if (!document.hidden) aufNeueVersionPruefen(); });
+window.addEventListener('focus', aufNeueVersionPruefen);
+setInterval(aufNeueVersionPruefen, 30 * 60 * 1000);

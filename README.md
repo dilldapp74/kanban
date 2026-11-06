@@ -144,6 +144,8 @@ python3 -m http.server 8765
 
 Dann http://localhost:8765 öffnen. Nach Änderungen an CSS/JS die Versionsnummer `?v=…` in
 `index.html` und `CACHE` in `sw.js` hochzählen, damit installierte Apps die neue Fassung sofort laden.
+Geöffnete Apps (z. B. im Mac-Dock) erkennen eine neue Versionsnummer beim Zurückkehren ins Fenster
+bzw. alle 30 Minuten und laden dann selbst neu, sobald kein Dialog offen ist.
 
 ## Veröffentlichen
 
