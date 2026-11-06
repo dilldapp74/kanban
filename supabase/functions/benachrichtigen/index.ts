@@ -27,7 +27,7 @@ const CORS = {
 };
 
 const SPALTEN: Record<string, string> = {
-  backlog: "Backlog", offen: "Offen", arbeit: "In Arbeit", erledigt: "Erledigt",
+  backlog: "Backlog", offen: "Up Next", arbeit: "In Arbeit", erledigt: "Erledigt",
 };
 
 function antwort(text: string, status = 200) {

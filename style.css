@@ -586,6 +586,30 @@ body.zieht .tab { border-style: dashed; border-color: var(--farbe); color: var(-
   }
   .spalte { flex-basis: calc(100vw - 44px); }
   #board { gap: 12px; }
+
+  /* Größere Schrift für bessere Lesbarkeit auf dem Handy */
+  body { font-size: 17px; }
+  .spalte-kopf h2 { font-size: 18px; }
+  .anzahl, .spalte-kopf .klein, .karten:empty::before { font-size: 14px; }
+  .notiz { font-size: 15px; }
+  .etikett { font-size: 13.5px; padding: 3px 10px; }
+  .avatar { width: 30px; height: 30px; font-size: 13px; }
+  .tab { font-size: 14.5px; padding: 8px 4px; }
+  .tab-anzahl { font-size: 12.5px; }
+  dialog h3 { font-size: 20px; }
+  dialog h4 { font-size: 16px; }
+  dialog label, .leise { font-size: 14px; }
+  .hinweis, .meldung { font-size: 15px; }
+  .schalter { font-size: 16px !important; }
+  /* Eingabefelder mindestens 16px – sonst zoomt das iPhone beim Antippen hinein */
+  input, select, textarea { font-size: 16px; }
+  /* Knopfleiste der Dialoge: etwas schmaler, damit alle Knöpfe in eine Zeile passen */
+  dialog { padding: 0 16px 22px; }
+  .dialog-kopf { margin: 0 -16px 4px; padding-left: 16px; padding-right: 16px; }
+  .dialog-fuss { margin: 20px -16px -22px; padding-left: 16px; padding-right: 16px; gap: 6px; }
+  .dialog-fuss .rechts { gap: 6px; }
+  .dialog-fuss .knopf { padding-left: 11px; padding-right: 11px; }
+  .dialog-fuss .knopf.gefahr { padding-left: 6px; padding-right: 6px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

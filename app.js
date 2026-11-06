@@ -4,7 +4,7 @@ const SPEICHER_SCHLUESSEL = 'kanban-daten-v1';
 
 const SPALTEN = [
   { id: 'backlog', name: 'Backlog' },
-  { id: 'offen', name: 'Offen' },
+  { id: 'offen', name: 'Up Next' },
   { id: 'arbeit', name: 'In Arbeit' },
   { id: 'erledigt', name: 'Erledigt' }
 ];
