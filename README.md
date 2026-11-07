@@ -26,6 +26,7 @@ allen Geräten und Familienmitgliedern ab.
 - Installierbar (PWA): Android „Zum Startbildschirm hinzufügen“, macOS Safari „Zum Dock hinzufügen“
 - Drei Farbschemata (**Rot & Schwarz**, **Blau**, **Pastell**) je hell und dunkel – Auswahl unter ⚙,
   gespeichert pro Gerät
+- Ton beim Erledigen einer Aufgabe (`sounds/erledigt.mp3`), unter ⚙ pro Gerät abschaltbar
 - Backup als JSON-Datei (Einstellungen ⚙)
 
 ## Technik
@@ -44,6 +45,7 @@ keine Abhängigkeiten außer der Supabase-Bibliothek (per CDN, feste Version, mi
 | `config.js` | Supabase-URL, **öffentlicher** Schlüssel, öffentlicher VAPID-Schlüssel |
 | `sw.js` | Service Worker: Offline-Start („Netz zuerst, sonst Cache“), Push-Empfang |
 | `manifest.webmanifest`, `icons/` | App-Name, Symbole, Vollbild-Start |
+| `sounds/erledigt.mp3` | Ton beim Erledigen (erstellt mit Suno) |
 | `supabase.sql` | Datenbank-Schema mit Zugriffsschutz (wiederholbar ausführbar) |
 | `supabase/functions/benachrichtigen/` | Edge Function, die die Push-Nachrichten verschickt |
 | `ANLEITUNG.md` | Schritt-für-Schritt-Einrichtung |

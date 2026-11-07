@@ -2,7 +2,7 @@
 // Strategie: immer zuerst aus dem Netz laden (damit Updates sofort ankommen),
 // bei fehlender Verbindung die zuletzt gespeicherte Fassung verwenden.
 
-const CACHE = 'kanban-v16';
+const CACHE = 'kanban-v17';
 
 const DATEIEN = [
   './',
@@ -16,6 +16,7 @@ const DATEIEN = [
   './manifest.webmanifest',
   './icons/icon-192.png',
   './icons/icon-512.png',
+  './sounds/erledigt.mp3',
   'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.110.0/dist/umd/supabase.js'
 ];
 
@@ -48,7 +49,8 @@ self.addEventListener('fetch', ereignis => {
   ereignis.respondWith(
     netz
       .then(antwort => {
-        if (antwort.ok) {
+        // Nur vollständige Antworten speichern (Audio kommt oft stückweise als 206)
+        if (antwort.status === 200) {
           const kopie = antwort.clone();
           caches.open(CACHE).then(c => c.put(anfrage, kopie));
         }

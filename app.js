@@ -355,6 +355,7 @@ formular.addEventListener('submit', e => {
 
   let k = daten.karten.find(x => x.id === bearbeiteId);
   const vorherZugewiesen = k ? k.zugewiesene : [];
+  const vorherSpalte = k ? k.spalte : null;
   // Privat nur übernehmen, wenn der Schalter angeboten wurde; private Aufgaben gehören mir
   if (!document.getElementById('privatBereich').hidden) werte.privat = fPrivat.checked;
   if (werte.privat) werte.zugewiesene = [meinMitglied.id];
@@ -369,6 +370,7 @@ formular.addEventListener('submit', e => {
   }
   markieren(k);
   melden(k, vorherZugewiesen);
+  if (k.spalte === 'erledigt' && vorherSpalte !== 'erledigt') erledigtTonSpielen();
   dialog.close();
   uebernehmen();
 });
@@ -495,6 +497,7 @@ function ziehenBeenden() {
   if (k && zielSpalte) {
     const andere = kartenDerSpalte(zielSpalte).filter(x => x !== k);
     k.position = andere.length ? andere[0].position - 1000 : 0;
+    if (zielSpalte === 'erledigt' && k.spalte !== 'erledigt') erledigtTonSpielen();
     k.spalte = zielSpalte;
     markieren(k);
     melden(k, k.zugewiesene);
@@ -514,7 +517,9 @@ function ziehenBeenden() {
   else if (vor) k.position = positionVon(vor) + 1000;
   else if (nach) k.position = positionVon(nach) - 1000;
   else k.position = 0;
-  k.spalte = karte.parentElement.dataset.spalte;
+  const neueSpalte = karte.parentElement.dataset.spalte;
+  if (neueSpalte === 'erledigt' && k.spalte !== 'erledigt') erledigtTonSpielen();
+  k.spalte = neueSpalte;
 
   markieren(k);
   melden(k, k.zugewiesene);
@@ -596,6 +601,35 @@ document.addEventListener('keydown', e => {
 // Farbschema wechseln (themaSetzen steht in thema.js); das Menü bleibt offen zum Ausprobieren
 for (const knopf of document.querySelectorAll('.thema-knopf')) knopf.onclick = () => themaSetzen(knopf.dataset.wahl);
 themaSetzen(aktuellesThema);
+
+// ---------- Ton beim Erledigen ----------
+// Spielt, wenn ich selbst eine Aufgabe nach "Erledigt" bringe (nicht bei Änderungen anderer).
+// Ein-/ausschaltbar im Einstellungsmenü, gespeichert pro Gerät.
+
+const TON_SCHLUESSEL = 'kanban-ton';
+const erledigtTon = new Audio('sounds/erledigt.mp3');
+erledigtTon.preload = 'auto';
+let tonAn = true;
+try { tonAn = localStorage.getItem(TON_SCHLUESSEL) !== 'aus'; } catch (e) { /* egal */ }
+
+function erledigtTonSpielen() {
+  if (!tonAn) return;
+  erledigtTon.currentTime = 0;
+  // play() kann scheitern (z. B. Ton vom System blockiert) – dann eben still
+  erledigtTon.play().catch(() => {});
+}
+
+const tonKnopf = document.getElementById('tonKnopf');
+function tonKnopfZeigen() {
+  tonKnopf.textContent = (tonAn ? '🔊' : '🔇') + ' Ton beim Erledigen: ' + (tonAn ? 'an' : 'aus');
+}
+tonKnopf.onclick = () => {
+  tonAn = !tonAn;
+  try { localStorage.setItem(TON_SCHLUESSEL, tonAn ? 'an' : 'aus'); } catch (e) { /* egal */ }
+  tonKnopfZeigen();
+  if (tonAn) erledigtTonSpielen(); // kurze Hörprobe
+};
+tonKnopfZeigen();
 
 // ---------- Sichern & Laden (Backup als Datei) ----------
 

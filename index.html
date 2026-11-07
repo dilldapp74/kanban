@@ -14,9 +14,9 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
-<link rel="stylesheet" href="style.css?v=18">
+<link rel="stylesheet" href="style.css?v=19">
 <!-- Gespeichertes Farbschema vor dem ersten Zeichnen setzen -->
-<script src="thema.js?v=18"></script>
+<script src="thema.js?v=19"></script>
 </head>
 <body>
 
@@ -57,6 +57,7 @@
         <button type="button" class="thema-knopf" data-wahl="blau"><span class="muster"></span>Blau</button>
         <button type="button" class="thema-knopf" data-wahl="pastell"><span class="muster"></span>Pastell</button>
       </div>
+      <button class="menue-eintrag" id="tonKnopf"></button>
       <div class="menue-trenner"></div>
       <button class="menue-eintrag" id="exportKnopf">Backup herunterladen</button>
       <button class="menue-eintrag" id="importKnopf">Backup einspielen</button>
@@ -216,14 +217,14 @@
 </dialog>
 
 <!-- Reihenfolge wichtig: erst Einstellungen, dann Bibliothek, dann eigener Code -->
-<script src="config.js?v=18"></script>
+<script src="config.js?v=19"></script>
 <!-- integrity: Der Browser führt die Bibliothek nur aus, wenn sie Byte für Byte unverändert ist.
      Bei einem Versionswechsel neu berechnen (siehe README). -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.110.0/dist/umd/supabase.js"
         integrity="sha384-3wY11tldQ5+yWqAvmTN4XtQvnjoTva0cV15O/O/O5NTtp0ivVopSzLOzsVXWZse9"
         crossorigin="anonymous"></script>
-<script src="sync.js?v=18"></script>
-<script src="familie.js?v=18"></script>
-<script src="app.js?v=18"></script>
+<script src="sync.js?v=19"></script>
+<script src="familie.js?v=19"></script>
+<script src="app.js?v=19"></script>
 </body>
 </html>
