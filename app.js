@@ -699,7 +699,17 @@ function importieren(neue) {
 
 // Los geht's
 zeichnen();
+startSpalteZeigen();
 syncStarten();
+
+// Auf dem Handy (eine Spalte sichtbar) beim Öffnen gleich "Heute/In Arbeit" zeigen statt Backlog
+function startSpalteZeigen() {
+  if (!window.matchMedia('(max-width: 700px)').matches) return;
+  const spalte = board.querySelector('.spalte[data-spalte="arbeit"]');
+  if (!spalte) return;
+  board.scrollLeft = spalte.offsetLeft - (board.clientWidth - spalte.offsetWidth) / 2;
+  aktiveSpalteMarkieren();
+}
 
 // Installierbar und offline startbar machen (nur über http/https möglich)
 if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {

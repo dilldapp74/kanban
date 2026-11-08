@@ -20,7 +20,7 @@ allen Geräten und Familienmitgliedern ab.
 - **Diktieren** von Titel und Notiz (Spracherkennung des Browsers)
 - **Push-Benachrichtigungen:** neue Zuweisung, Änderung an meinen Aufgaben, morgens die heute fälligen
 - Verschieben per Ziehen am Griff ⠿ – auf dem Handy links und rechts an jeder Karte
-- Handy: feste Spaltenleiste oben zum Springen und als Ablageziel beim Ziehen;
+- Handy: startet in der Spalte „Heute/In Arbeit“; feste Spaltenleiste oben zum Springen und als Ablageziel beim Ziehen;
   die Knopfleiste der Dialoge bleibt unten über der Tastatur stehen (`interactive-widget=resizes-content`)
 - Echtzeit-Abgleich, offline nutzbar (Änderungen werden nachgeholt)
 - Installierbar (PWA): Android „Zum Startbildschirm hinzufügen“, macOS Safari „Zum Dock hinzufügen“
